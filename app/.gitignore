@@ -1,0 +1,12 @@
+# Build and IDE
+/build/
+/.gradle/
+/out/
+.idea/
+*.iml
+*.class
+
+# Bin / target
+./bin/
+./target/
+./dist/

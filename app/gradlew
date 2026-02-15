@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#
+# Gradle start-up script for POSIX
+#
+
+# Resolve APP_HOME
+APP_HOME=$( cd "$( dirname "$0" )" && pwd )
+
+# Add default JVM options here.
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+
+exec java -cp "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
