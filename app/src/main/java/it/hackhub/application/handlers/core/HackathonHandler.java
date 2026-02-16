@@ -3,13 +3,18 @@ package it.hackhub.application.handlers.core;
 import it.hackhub.application.constants.PaymentConstants;
 import it.hackhub.application.dto.hackathon.HackathonCreateDTO;
 import it.hackhub.application.dto.hackathon.HackathonResponseDTO;
+import it.hackhub.application.dto.hackathon.HackathonUpdateDTO;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
+import it.hackhub.application.exceptions.submission.NotAllSubmissionsEvaluatedException;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.SottomissioneRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
+import it.hackhub.application.repositories.core.ValutazioneRepository;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.StatoHackathon;
+import it.hackhub.core.entities.core.Team;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,9 +26,10 @@ public class HackathonHandler {
   private final HackathonRepository hackathonRepository;
   private final TeamRepository teamRepository;
   private final SottomissioneRepository sottomissioneRepository;
+  private final ValutazioneRepository valutazioneRepository;
 
   public HackathonHandler(HackathonRepository hackathonRepository) {
-    this(hackathonRepository, null, null);
+    this(hackathonRepository, null, null, null);
   }
 
   public HackathonHandler(
@@ -31,9 +37,19 @@ public class HackathonHandler {
     TeamRepository teamRepository,
     SottomissioneRepository sottomissioneRepository
   ) {
+    this(hackathonRepository, teamRepository, sottomissioneRepository, null);
+  }
+
+  public HackathonHandler(
+    HackathonRepository hackathonRepository,
+    TeamRepository teamRepository,
+    SottomissioneRepository sottomissioneRepository,
+    ValutazioneRepository valutazioneRepository
+  ) {
     this.hackathonRepository = hackathonRepository;
     this.teamRepository = teamRepository;
     this.sottomissioneRepository = sottomissioneRepository;
+    this.valutazioneRepository = valutazioneRepository;
   }
 
   /**
@@ -170,5 +186,81 @@ public class HackathonHandler {
       }
     }
     return count;
+  }
+
+  /**
+   * Modifica Hackathon: aggiorna solo i campi non null del DTO.
+   */
+  public Hackathon aggiornaHackathon(Long hackathonId, HackathonUpdateDTO dto) {
+    Hackathon h = hackathonRepository
+      .findById(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    if (dto.getNome() != null) h.setNome(dto.getNome());
+    if (dto.getRegolamento() != null) h.setRegolamento(dto.getRegolamento());
+    if (dto.getStato() != null) h.setStato(dto.getStato());
+    if (dto.getInizioIscrizioni() != null) h.setInizioIscrizioni(
+      dto.getInizioIscrizioni()
+    );
+    if (dto.getScadenzaIscrizioni() != null) h.setScadenzaIscrizioni(
+      dto.getScadenzaIscrizioni()
+    );
+    if (dto.getDataInizio() != null) h.setDataInizio(dto.getDataInizio());
+    if (dto.getDataFine() != null) h.setDataFine(dto.getDataFine());
+    if (dto.getScadenzaSottomissioni() != null) h.setScadenzaSottomissioni(
+      dto.getScadenzaSottomissioni()
+    );
+    if (dto.getLuogo() != null) h.setLuogo(dto.getLuogo());
+    if (dto.getPremio() != null) {
+      if (dto.getPremio() > PaymentConstants.MAX_PAYPAL_SANDBOX_AMOUNT) {
+        throw new BusinessLogicException(
+          "Il premio supera il limite PayPal Sandbox"
+        );
+      }
+      h.setPremio(dto.getPremio());
+    }
+    if (dto.getMaxTeamSize() != null) h.setMaxTeamSize(dto.getMaxTeamSize());
+    return hackathonRepository.save(h);
+  }
+
+  /**
+   * Proclama vincitore.
+   */
+  public void impostaVincitore(Long hackathonId, Long teamId) {
+    Hackathon h = hackathonRepository
+      .findById(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    Team team = teamRepository != null
+      ? teamRepository
+        .findById(teamId)
+        .orElseThrow(() -> new EntityNotFoundException("Team", teamId))
+      : null;
+    if (team == null) throw new EntityNotFoundException("Team", teamId);
+    if (
+      teamRepository != null &&
+      !teamRepository.isTeamIscritto(hackathonId, teamId)
+    ) {
+      throw new BusinessLogicException(
+        "Il team non è iscritto a questo hackathon"
+      );
+    }
+    if (h.getTeamVincitore() != null) {
+      throw new BusinessLogicException("Questo hackathon ha già un vincitore");
+    }
+    if (sottomissioneRepository != null && valutazioneRepository != null) {
+      List<Sottomissione> sottomissioni = sottomissioneRepository.findByHackathonId(
+        hackathonId
+      );
+      boolean allEvaluated = sottomissioni
+        .stream()
+        .allMatch(s ->
+          !valutazioneRepository.findBySottomissioneId(s.getId()).isEmpty()
+        );
+      if (!allEvaluated) {
+        throw new NotAllSubmissionsEvaluatedException(hackathonId);
+      }
+    }
+    h.setTeamVincitore(team);
+    h.setStato(StatoHackathon.CONCLUSO);
+    hackathonRepository.save(h);
   }
 }

@@ -20,6 +20,7 @@ public class Hackathon {
   private String luogo;
   private Double premio;
   private Integer maxTeamSize;
+  private Team teamVincitore;
 
   public Hackathon() {}
 
@@ -117,6 +118,14 @@ public class Hackathon {
 
   public void setMaxTeamSize(Integer maxTeamSize) {
     this.maxTeamSize = maxTeamSize;
+  }
+
+  public Team getTeamVincitore() {
+    return teamVincitore;
+  }
+
+  public void setTeamVincitore(Team teamVincitore) {
+    this.teamVincitore = teamVincitore;
   }
 
   @Override
