@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Entità Hackathon – iterazione 0
+ * Entità Hackathon
  */
 public class Hackathon {
 
