@@ -5,6 +5,7 @@ import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.core.Valutazione;
+import it.hackhub.core.entities.associations.IscrizioneTeamHackathon;
 import it.hackhub.core.entities.associations.InvitoStaff;
 import it.hackhub.core.entities.associations.InvitoTeam;
 import it.hackhub.core.entities.associations.StaffHackaton;
@@ -30,7 +31,8 @@ public class StorageInMemoria {
   private final Map<Long, InvitoTeam> invitiTeam = new ConcurrentHashMap<>();
   private final Map<Long, InvitoStaff> invitiStaff = new ConcurrentHashMap<>();
   private final Map<Long, StaffHackaton> staffHackaton = new ConcurrentHashMap<>();
-  /** hackathonId -> set di teamId iscritti */
+  private final Map<Long, IscrizioneTeamHackathon> iscrizioniTeamHackathon = new ConcurrentHashMap<>();
+  /** hackathonId -> set di teamId iscritti (derivato / in sync con iscrizioniTeamHackathon) */
   private final Map<Long, Set<Long>> hackathonIscrizioni = new ConcurrentHashMap<>();
 
   private final AtomicLong nextHackathonId = new AtomicLong(1);
@@ -39,6 +41,7 @@ public class StorageInMemoria {
   private final AtomicLong nextInvitoTeamId = new AtomicLong(1);
   private final AtomicLong nextInvitoStaffId = new AtomicLong(1);
   private final AtomicLong nextStaffHackatonId = new AtomicLong(1);
+  private final AtomicLong nextIscrizioneTeamHackathonId = new AtomicLong(1);
   private final AtomicLong nextSottomissioneId = new AtomicLong(1);
   private final AtomicLong nextValutazioneId = new AtomicLong(1);
   private final AtomicLong nextRichiestaSupportoId = new AtomicLong(1);
@@ -86,6 +89,14 @@ public class StorageInMemoria {
 
   public Map<Long, StaffHackaton> getStaffHackaton() {
     return staffHackaton;
+  }
+
+  public Map<Long, IscrizioneTeamHackathon> getIscrizioniTeamHackathon() {
+    return iscrizioniTeamHackathon;
+  }
+
+  public long nextIscrizioneTeamHackathonId() {
+    return nextIscrizioneTeamHackathonId.getAndIncrement();
   }
 
   public long nextHackathonId() {

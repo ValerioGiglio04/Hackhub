@@ -50,4 +50,14 @@ public class InvitoStaffRepositoryImpl implements InvitoStaffRepository {
         .filter(i -> stato == i.getStato())
         .collect(Collectors.toList());
   }
+
+  @Override
+  public Optional<InvitoStaff> findByHackathonIdAndUtenteInvitatoIdAndStato(
+      Long hackathonId, Long utenteInvitatoId, InvitoStaff.StatoInvito stato) {
+    return storage.getInvitiStaff().values().stream()
+        .filter(i -> hackathonId != null && i.getHackathon() != null && hackathonId.equals(i.getHackathon().getId()))
+        .filter(i -> utenteInvitatoId != null && i.getUtenteInvitato() != null && utenteInvitatoId.equals(i.getUtenteInvitato().getId()))
+        .filter(i -> stato == i.getStato())
+        .findFirst();
+  }
 }

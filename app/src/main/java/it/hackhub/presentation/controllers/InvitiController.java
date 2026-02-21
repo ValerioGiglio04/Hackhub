@@ -12,6 +12,7 @@ import it.hackhub.application.handlers.TeamHandler;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.core.entities.associations.InvitoTeam;
 import it.hackhub.core.entities.core.Team;
+import java.util.List;
 
 /**
  * Controller per inviti team: invita utente, gestisci invito (accetta/rifiuta).
@@ -50,6 +51,17 @@ public class InvitiController {
         utenteCorrenteId
     );
     return toInvitoTeamResponseDTO(invito);
+  }
+
+  /**
+   * Visualizza inviti team ricevuti (PENDING) per l'utente corrente. GET /api/inviti/ricevuti
+   */
+  public List<InvitoTeamResponseDTO> ottieniInvitiRicevuti(Long utenteCorrenteId) {
+    if (utenteCorrenteId == null) {
+      throw new UnauthorizedException("Utente non autenticato");
+    }
+    List<InvitoTeam> inviti = invitiHandler.ottieniInvitiRicevutiPending(utenteCorrenteId);
+    return inviti.stream().map(InvitiController::toInvitoTeamResponseDTO).collect(java.util.stream.Collectors.toList());
   }
 
   /**

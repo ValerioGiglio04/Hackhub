@@ -4,6 +4,7 @@ import it.hackhub.application.dto.hackathon.GestisciInvitoStaffDTO;
 import it.hackhub.application.dto.hackathon.InvitoStaffResponseDTO;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.handlers.InvitiStaffHandler;
+import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.core.entities.associations.InvitoStaff;
 
 /**
@@ -32,30 +33,10 @@ public class InvitiStaffController {
         return null;
       case "RIFIUTA":
         InvitoStaff invito = invitiStaffHandler.rifiutaInvitoStaff(invitoId, utenteCorrenteId);
-        return toInvitoStaffResponseDTO(invito);
+        return InvitoStaffDtoMapper.toResponseDTO(invito);
       default:
         throw new BusinessLogicException("Azione non valida: " + dto.getAzione());
     }
   }
 
-  private static InvitoStaffResponseDTO toInvitoStaffResponseDTO(InvitoStaff invito) {
-    InvitoStaffResponseDTO out = new InvitoStaffResponseDTO();
-    out.setId(invito.getId());
-    out.setStato(invito.getStato());
-    out.setDataInvito(invito.getDataInvito());
-    if (invito.getHackathon() != null) {
-      out.setHackathonId(invito.getHackathon().getId());
-      out.setNomeHackathon(invito.getHackathon().getNome());
-    }
-    if (invito.getUtenteInvitato() != null) {
-      out.setUtenteInvitatoId(invito.getUtenteInvitato().getId());
-      String n = invito.getUtenteInvitato().getNome();
-      String c = invito.getUtenteInvitato().getCognome();
-      out.setUtenteInvitatoNome(n != null && c != null ? n + " " + c : (n != null ? n : c));
-    }
-    if (invito.getMittente() != null) {
-      out.setMittenteId(invito.getMittente().getId());
-    }
-    return out;
-  }
 }

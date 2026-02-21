@@ -3,6 +3,8 @@ package it.hackhub.presentation.controllers;
 import it.hackhub.application.dto.TeamCreateDTO;
 import it.hackhub.application.dto.TeamResponseDTO;
 import it.hackhub.application.dto.UtenteDTO;
+import it.hackhub.application.dto.team.TeamCaptainDTO;
+import it.hackhub.application.dto.team.TeamHackathonDTO;
 import it.hackhub.application.exceptions.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
@@ -123,5 +125,53 @@ public class TeamController {
         } catch (UnauthorizedException e) {
             throw new RuntimeException("Utente non autorizzato", e);
         }
+    }
+
+    /**
+     * Iscrive il team a un hackathon (Use case: Iscrive team ad Hackathon). Solo membro o capo del team.
+     */
+    public void iscriviAdHackathon(TeamHackathonDTO dto, Long utenteCorrenteId) {
+        if (utenteCorrenteId == null) {
+            throw new UnauthorizedException("Utente non autenticato");
+        }
+        Team team = teamRepository.findByIdWithCapoAndMembri(dto.getTeamId())
+                .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
+        boolean isMember = (team.getCapo() != null && team.getCapo().getId().equals(utenteCorrenteId))
+                || (team.getMembri() != null && team.getMembri().stream().anyMatch(m -> m.getId().equals(utenteCorrenteId)));
+        if (!isMember) {
+            throw new UnauthorizedException("Solo un membro o il capo del team può iscrivere il team all'hackathon");
+        }
+        teamHandler.iscriviAdHackathon(dto.getTeamId(), dto.getHackathonId());
+    }
+
+    /**
+     * Nomina nuovo capo del team (Use case: Nomina nuovo capo). Solo il capo attuale può farlo.
+     */
+    public TeamResponseDTO nominaNuovoCapo(TeamCaptainDTO dto, Long utenteCorrenteId) {
+        if (utenteCorrenteId == null) {
+            throw new UnauthorizedException("Utente non autenticato");
+        }
+        Team team = teamRepository.findByIdWithCapoAndMembri(dto.getTeamId())
+                .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
+        if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {
+            throw new UnauthorizedException("Solo il capo del team può nominare un nuovo capo");
+        }
+        Team aggiornato = teamHandler.nominaNuovoCapo(dto.getTeamId(), dto.getNuovoCapoId());
+        return teamHandler.toResponseDTO(aggiornato);
+    }
+
+    /**
+     * Rimuove un membro dal team (Use case: Rimuove membro team). Solo il capo può farlo.
+     */
+    public void rimuoviMembroTeam(Long teamId, Long userId, Long utenteCorrenteId) {
+        if (utenteCorrenteId == null) {
+            throw new UnauthorizedException("Utente non autenticato");
+        }
+        Team team = teamRepository.findByIdWithCapoAndMembri(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
+        if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {
+            throw new UnauthorizedException("Solo il capo del team può rimuovere membri");
+        }
+        teamHandler.rimuoviMembro(teamId, userId);
     }
 }

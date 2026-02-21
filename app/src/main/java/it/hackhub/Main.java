@@ -13,6 +13,7 @@ import it.hackhub.application.repositories.core.SottomissioneRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.application.repositories.core.ValutazioneRepository;
+import it.hackhub.application.repositories.associations.IscrizioneTeamHackathonRepository;
 import it.hackhub.application.repositories.associations.InvitoStaffRepository;
 import it.hackhub.application.repositories.associations.InvitoTeamRepository;
 import it.hackhub.application.repositories.associations.StaffHackatonRepository;
@@ -21,6 +22,7 @@ import it.hackhub.application.repositories.support.SegnalazioneViolazioneReposit
 import it.hackhub.application.scheduler.HackathonScheduler;
 import it.hackhub.infrastructure.persistence.StorageInMemoria;
 import it.hackhub.infrastructure.persistence.impl.HackathonRepositoryImpl;
+import it.hackhub.infrastructure.persistence.impl.IscrizioneTeamHackathonRepositoryImpl;
 import it.hackhub.infrastructure.persistence.impl.InvitoStaffRepositoryImpl;
 import it.hackhub.infrastructure.persistence.impl.InvitoTeamRepositoryImpl;
 import it.hackhub.infrastructure.persistence.impl.RichiestaSupportoRepositoryImpl;
@@ -67,6 +69,7 @@ public class Main {
     InvitoTeamRepository invitoTeamRepository = new InvitoTeamRepositoryImpl(storage);
     InvitoStaffRepository invitoStaffRepository = new InvitoStaffRepositoryImpl(storage);
     StaffHackatonRepository staffHackatonRepository = new StaffHackatonRepositoryImpl(storage);
+    IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository = new IscrizioneTeamHackathonRepositoryImpl(storage);
 
     HackathonHandler hackathonHandler = new HackathonHandler(
       hackathonRepository,
@@ -76,8 +79,16 @@ public class Main {
       utenteRepository,
       staffHackatonRepository
     );
+    InvitiStaffHandler invitiStaffHandler = new InvitiStaffHandler(
+      invitoStaffRepository,
+      hackathonHandler,
+      hackathonRepository,
+      utenteRepository,
+      staffHackatonRepository
+    );
     HackathonController hackathonController = new HackathonController(
-      hackathonHandler
+      hackathonHandler,
+      invitiStaffHandler
     );
     HackathonScheduler hackathonScheduler = new HackathonScheduler(
       hackathonController
@@ -101,7 +112,12 @@ public class Main {
       supportoDtoMapper
     );
 
-    TeamHandler teamHandler = new TeamHandler(teamRepository, utenteRepository);
+    TeamHandler teamHandler = new TeamHandler(
+      teamRepository,
+      utenteRepository,
+      hackathonRepository,
+      iscrizioneTeamHackathonRepository
+    );
     InvitiHandler invitiHandler = new InvitiHandler(
       invitoTeamRepository,
       teamRepository,
@@ -112,10 +128,6 @@ public class Main {
       invitiHandler,
       teamHandler,
       teamRepository
-    );
-    InvitiStaffHandler invitiStaffHandler = new InvitiStaffHandler(
-      invitoStaffRepository,
-      hackathonHandler
     );
     InvitiStaffController invitiStaffController = new InvitiStaffController(invitiStaffHandler);
     TeamController teamController = new TeamController(

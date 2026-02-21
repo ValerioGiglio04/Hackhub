@@ -2,9 +2,13 @@ package it.hackhub.presentation.controllers.core;
 
 import it.hackhub.application.dto.hackathon.HackathonCreateDTO;
 import it.hackhub.application.dto.hackathon.HackathonResponseDTO;
+import it.hackhub.application.dto.hackathon.HackathonStaffAssignmentDTO;
 import it.hackhub.application.dto.hackathon.HackathonUpdateDTO;
 import it.hackhub.application.dto.hackathon.HackathonWinnerDTO;
+import it.hackhub.application.dto.hackathon.InvitoStaffResponseDTO;
+import it.hackhub.application.handlers.InvitiStaffHandler;
 import it.hackhub.application.handlers.core.HackathonHandler;
+import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.core.entities.core.Hackathon;
 
 /**
@@ -13,9 +17,15 @@ import it.hackhub.core.entities.core.Hackathon;
 public class HackathonController {
 
   private final HackathonHandler hackathonHandler;
+  private final InvitiStaffHandler invitiStaffHandler;
 
   public HackathonController(HackathonHandler hackathonHandler) {
+    this(hackathonHandler, null);
+  }
+
+  public HackathonController(HackathonHandler hackathonHandler, InvitiStaffHandler invitiStaffHandler) {
     this.hackathonHandler = hackathonHandler;
+    this.invitiStaffHandler = invitiStaffHandler;
   }
 
   public HackathonResponseDTO creaHackathon(HackathonCreateDTO dto) {
@@ -56,5 +66,21 @@ public class HackathonController {
   /** Conclusione fase svolgimento (chiamato da HackathonScheduler). */
   public int concludiFaseSvolgimento() {
     return hackathonHandler.concludiFaseSvolgimento();
+  }
+
+  /**
+   * Invita staff a un hackathon (Use case: Invita staff – Organizzatore).
+   * POST /api/hackathon/invita-staff
+   */
+  public InvitoStaffResponseDTO invitaStaff(HackathonStaffAssignmentDTO dto, Long utenteCorrenteId) {
+    if (invitiStaffHandler == null) {
+      throw new IllegalStateException("InvitiStaffHandler non configurato");
+    }
+    var invito = invitiStaffHandler.invitaStaff(
+        dto.getHackathonId(),
+        dto.getUtenteId(),
+        utenteCorrenteId
+    );
+    return InvitoStaffDtoMapper.toResponseDTO(invito);
   }
 }

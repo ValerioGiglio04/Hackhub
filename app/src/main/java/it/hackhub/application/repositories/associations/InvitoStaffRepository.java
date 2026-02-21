@@ -11,4 +11,6 @@ public interface InvitoStaffRepository {
   Optional<InvitoStaff> findByIdWithDetails(Long id);
   List<InvitoStaff> findByUtenteInvitatoIdAndStato(Long utenteInvitatoId, InvitoStaff.StatoInvito stato);
   List<InvitoStaff> findByHackathonIdAndStato(Long hackathonId, InvitoStaff.StatoInvito stato);
+  Optional<InvitoStaff> findByHackathonIdAndUtenteInvitatoIdAndStato(
+    Long hackathonId, Long utenteInvitatoId, InvitoStaff.StatoInvito stato);
 }
