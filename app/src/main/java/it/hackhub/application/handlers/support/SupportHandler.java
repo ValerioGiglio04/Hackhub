@@ -27,6 +27,13 @@ public class SupportHandler {
     this.segnalazioneViolazioneRepository = segnalazioneViolazioneRepository;
   }
 
+  /**
+   * Salva una richiesta di supporto (entità già compilata). Usato dal controller dopo validazione e verifica capo.
+   */
+  public RichiestaSupporto creaRichiesta(RichiestaSupporto richiesta) {
+    return richiestaSupportoRepository.save(richiesta);
+  }
+
   public RichiestaSupportoResponseDTO creaRichiestaSupporto(
     RichiestaSupportoCreateDTO dto
   ) {

@@ -4,7 +4,8 @@ import it.hackhub.application.dto.TeamResponseDTO;
 import it.hackhub.application.dto.UtenteDTO;
 import it.hackhub.application.exceptions.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
-import it.hackhub.application.repositories.TeamRepository;
+import it.hackhub.application.repositories.core.TeamRepository;
+import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
 
@@ -18,9 +19,53 @@ import java.util.stream.Collectors;
 public class TeamHandler {
 
     private final TeamRepository teamRepository;
+    private final UtenteRepository utenteRepository;
 
     public TeamHandler(TeamRepository teamRepository) {
+        this(teamRepository, null);
+    }
+
+    public TeamHandler(TeamRepository teamRepository, UtenteRepository utenteRepository) {
         this.teamRepository = teamRepository;
+        this.utenteRepository = utenteRepository;
+    }
+
+    /**
+     * Crea un team (capo e membri già impostati sull'entità; membri tipicamente vuoti).
+     */
+    public Team creaTeam(Team team) {
+        if (team.getMembri() == null) {
+            team.setMembri(new java.util.ArrayList<>());
+        }
+        return teamRepository.save(team);
+    }
+
+    /**
+     * Converte un Team in TeamResponseDTO (esposto per uso dal controller).
+     */
+    public TeamResponseDTO toResponseDTO(Team team) {
+        return convertToTeamResponseDTO(team);
+    }
+
+    /**
+     * Aggiunge un membro al team (usato quando un invito viene accettato).
+     */
+    public Team aggiungiMembro(Long teamId, Long userId) {
+        if (utenteRepository == null) {
+            throw new IllegalStateException("UtenteRepository non configurato");
+        }
+        Team team = teamRepository.findById(teamId)
+            .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
+        Utente utente = utenteRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException("Utente", userId));
+        if (team.contieneUtente(utente)) {
+            throw new it.hackhub.application.exceptions.core.BusinessLogicException("L'utente è già nel team");
+        }
+        if (team.getMembri() == null) {
+            team.setMembri(new java.util.ArrayList<>());
+        }
+        team.getMembri().add(utente);
+        return teamRepository.save(team);
     }
 
     /**

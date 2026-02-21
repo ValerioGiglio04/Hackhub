@@ -3,7 +3,11 @@ package it.hackhub.infrastructure.persistence;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Team;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.core.Valutazione;
+import it.hackhub.core.entities.associations.InvitoStaff;
+import it.hackhub.core.entities.associations.InvitoTeam;
+import it.hackhub.core.entities.associations.StaffHackaton;
 import it.hackhub.core.entities.support.RichiestaSupporto;
 import it.hackhub.core.entities.support.SegnalazioneViolazione;
 import java.util.Map;
@@ -18,15 +22,23 @@ public class StorageInMemoria {
 
   private final Map<Long, Hackathon> hackathons = new ConcurrentHashMap<>();
   private final Map<Long, Team> teams = new ConcurrentHashMap<>();
+  private final Map<Long, Utente> utenti = new ConcurrentHashMap<>();
   private final Map<Long, Sottomissione> sottomissioni = new ConcurrentHashMap<>();
   private final Map<Long, Valutazione> valutazioni = new ConcurrentHashMap<>();
   private final Map<Long, RichiestaSupporto> richiesteSupporto = new ConcurrentHashMap<>();
   private final Map<Long, SegnalazioneViolazione> segnalazioniViolazione = new ConcurrentHashMap<>();
+  private final Map<Long, InvitoTeam> invitiTeam = new ConcurrentHashMap<>();
+  private final Map<Long, InvitoStaff> invitiStaff = new ConcurrentHashMap<>();
+  private final Map<Long, StaffHackaton> staffHackaton = new ConcurrentHashMap<>();
   /** hackathonId -> set di teamId iscritti */
   private final Map<Long, Set<Long>> hackathonIscrizioni = new ConcurrentHashMap<>();
 
   private final AtomicLong nextHackathonId = new AtomicLong(1);
   private final AtomicLong nextTeamId = new AtomicLong(1);
+  private final AtomicLong nextUtenteId = new AtomicLong(1);
+  private final AtomicLong nextInvitoTeamId = new AtomicLong(1);
+  private final AtomicLong nextInvitoStaffId = new AtomicLong(1);
+  private final AtomicLong nextStaffHackatonId = new AtomicLong(1);
   private final AtomicLong nextSottomissioneId = new AtomicLong(1);
   private final AtomicLong nextValutazioneId = new AtomicLong(1);
   private final AtomicLong nextRichiestaSupportoId = new AtomicLong(1);
@@ -38,6 +50,10 @@ public class StorageInMemoria {
 
   public Map<Long, Team> getTeams() {
     return teams;
+  }
+
+  public Map<Long, Utente> getUtenti() {
+    return utenti;
   }
 
   public Map<Long, Sottomissione> getSottomissioni() {
@@ -60,12 +76,40 @@ public class StorageInMemoria {
     return segnalazioniViolazione;
   }
 
+  public Map<Long, InvitoTeam> getInvitiTeam() {
+    return invitiTeam;
+  }
+
+  public Map<Long, InvitoStaff> getInvitiStaff() {
+    return invitiStaff;
+  }
+
+  public Map<Long, StaffHackaton> getStaffHackaton() {
+    return staffHackaton;
+  }
+
   public long nextHackathonId() {
     return nextHackathonId.getAndIncrement();
   }
 
   public long nextTeamId() {
     return nextTeamId.getAndIncrement();
+  }
+
+  public long nextUtenteId() {
+    return nextUtenteId.getAndIncrement();
+  }
+
+  public long nextInvitoTeamId() {
+    return nextInvitoTeamId.getAndIncrement();
+  }
+
+  public long nextInvitoStaffId() {
+    return nextInvitoStaffId.getAndIncrement();
+  }
+
+  public long nextStaffHackatonId() {
+    return nextStaffHackatonId.getAndIncrement();
   }
 
   public long nextSottomissioneId() {

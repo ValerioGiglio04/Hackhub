@@ -7,11 +7,15 @@ import it.hackhub.application.dto.hackathon.HackathonUpdateDTO;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.submission.NotAllSubmissionsEvaluatedException;
+import it.hackhub.application.repositories.associations.StaffHackatonRepository;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.SottomissioneRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
+import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.application.repositories.core.ValutazioneRepository;
+import it.hackhub.core.entities.associations.StaffHackaton;
 import it.hackhub.core.entities.core.Hackathon;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
@@ -27,9 +31,11 @@ public class HackathonHandler {
   private final TeamRepository teamRepository;
   private final SottomissioneRepository sottomissioneRepository;
   private final ValutazioneRepository valutazioneRepository;
+  private final UtenteRepository utenteRepository;
+  private final StaffHackatonRepository staffHackatonRepository;
 
   public HackathonHandler(HackathonRepository hackathonRepository) {
-    this(hackathonRepository, null, null, null);
+    this(hackathonRepository, null, null, null, null, null);
   }
 
   public HackathonHandler(
@@ -37,7 +43,7 @@ public class HackathonHandler {
     TeamRepository teamRepository,
     SottomissioneRepository sottomissioneRepository
   ) {
-    this(hackathonRepository, teamRepository, sottomissioneRepository, null);
+    this(hackathonRepository, teamRepository, sottomissioneRepository, null, null, null);
   }
 
   public HackathonHandler(
@@ -46,10 +52,46 @@ public class HackathonHandler {
     SottomissioneRepository sottomissioneRepository,
     ValutazioneRepository valutazioneRepository
   ) {
+    this(hackathonRepository, teamRepository, sottomissioneRepository, valutazioneRepository, null, null);
+  }
+
+  public HackathonHandler(
+    HackathonRepository hackathonRepository,
+    TeamRepository teamRepository,
+    SottomissioneRepository sottomissioneRepository,
+    ValutazioneRepository valutazioneRepository,
+    UtenteRepository utenteRepository,
+    StaffHackatonRepository staffHackatonRepository
+  ) {
     this.hackathonRepository = hackathonRepository;
     this.teamRepository = teamRepository;
     this.sottomissioneRepository = sottomissioneRepository;
     this.valutazioneRepository = valutazioneRepository;
+    this.utenteRepository = utenteRepository;
+    this.staffHackatonRepository = staffHackatonRepository;
+  }
+
+  /**
+   * Assegna un utente allo staff dell'hackathon (dopo accettazione invito staff).
+   */
+  public void assegnaStaff(Long hackathonId, Long utenteId) {
+    if (utenteRepository == null || staffHackatonRepository == null) {
+      throw new IllegalStateException("UtenteRepository e StaffHackatonRepository richiesti per assegnaStaff");
+    }
+    Hackathon hackathon = hackathonRepository.findById(hackathonId)
+        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    Utente utente = utenteRepository.findById(utenteId)
+        .orElseThrow(() -> new EntityNotFoundException("Utente", utenteId));
+    boolean alreadyAssigned = staffHackatonRepository.findByHackathonId(hackathonId).stream()
+        .anyMatch(sh -> sh.getUtente() != null && utenteId.equals(sh.getUtente().getId()));
+    if (alreadyAssigned) {
+      throw new BusinessLogicException("L'utente è già assegnato a questo hackathon");
+    }
+    if (utente.getRuolo() == null || utente.getRuolo() == Utente.RuoloStaff.AUTENTICATO) {
+      throw new BusinessLogicException("L'utente non ha un ruolo staff valido");
+    }
+    StaffHackaton sh = new StaffHackaton(hackathon, utente);
+    staffHackatonRepository.save(sh);
   }
 
   /**

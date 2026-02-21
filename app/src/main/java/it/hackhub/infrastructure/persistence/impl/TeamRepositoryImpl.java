@@ -37,6 +37,20 @@ public class TeamRepositoryImpl implements TeamRepository {
   }
 
   @Override
+  public Optional<Team> findByIdWithCapoAndMembri(Long id) {
+    return findById(id);
+  }
+
+  @Override
+  public Optional<Team> findByMembroOrCapoId(Long utenteId) {
+    if (utenteId == null) return Optional.empty();
+    return storage.getTeams().values().stream()
+        .filter(t -> (t.getCapo() != null && utenteId.equals(t.getCapo().getId()))
+            || (t.getMembri() != null && t.getMembri().stream().anyMatch(m -> utenteId.equals(m.getId()))))
+        .findFirst();
+  }
+
+  @Override
   public int countTeamsIscritti(Long hackathonId) {
     Set<Long> teamIds = storage.getHackathonIscrizioni().get(hackathonId);
     return teamIds == null ? 0 : teamIds.size();
