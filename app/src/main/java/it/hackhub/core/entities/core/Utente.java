@@ -1,5 +1,6 @@
 package it.hackhub.core.entities.core;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -9,8 +10,11 @@ public class Utente {
 
   private Long id;
   private String email;
+  /** Hash della password (non esporre in JSON/serializzazione). */
+  private String passwordHash;
   private String nome;
   private String cognome;
+  private LocalDate dataRegistrazione;
   private RuoloStaff ruolo = RuoloStaff.AUTENTICATO;
 
   public enum RuoloStaff {
@@ -34,6 +38,22 @@ public class Utente {
 
   public void setEmail(String email) {
     this.email = email;
+  }
+
+  public String getPasswordHash() {
+    return passwordHash;
+  }
+
+  public void setPasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
+
+  public LocalDate getDataRegistrazione() {
+    return dataRegistrazione;
+  }
+
+  public void setDataRegistrazione(LocalDate dataRegistrazione) {
+    this.dataRegistrazione = dataRegistrazione;
   }
 
   public String getNome() {

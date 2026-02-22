@@ -16,6 +16,10 @@ repositories {
 }
 
 dependencies {
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    implementation 'org.mindrot:jbcrypt:0.4'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
 }
 
