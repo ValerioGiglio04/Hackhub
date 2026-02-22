@@ -3,12 +3,15 @@ package it.hackhub.presentation.controllers;
 import it.hackhub.application.dto.hackathon.GestisciInvitoStaffDTO;
 import it.hackhub.application.dto.hackathon.InvitoStaffResponseDTO;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
+import it.hackhub.application.exceptions.core.UnauthorizedException;
 import it.hackhub.application.handlers.InvitiStaffHandler;
 import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.core.entities.associations.InvitoStaff;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Controller per gestione inviti staff (accetta/rifiuta).
+ * Controller per gestione inviti staff (visualizza ricevuti, accetta/rifiuta).
  */
 public class InvitiStaffController {
 
@@ -16,6 +19,18 @@ public class InvitiStaffController {
 
   public InvitiStaffController(InvitiStaffHandler invitiStaffHandler) {
     this.invitiStaffHandler = invitiStaffHandler;
+  }
+
+  /**
+   * Visualizza inviti staff ricevuti (PENDING). GET /api/staff-inviti/ricevuti
+   */
+  public List<InvitoStaffResponseDTO> ottieniInvitiRicevuti(Long utenteCorrenteId) {
+    if (utenteCorrenteId == null) {
+      throw new UnauthorizedException("Utente non autenticato");
+    }
+    return invitiStaffHandler.ottieniInvitiRicevutiPending(utenteCorrenteId).stream()
+        .map(InvitoStaffDtoMapper::toResponseDTO)
+        .collect(Collectors.toList());
   }
 
   /**

@@ -8,8 +8,12 @@ import it.hackhub.application.exceptions.core.ValidationException;
 import it.hackhub.application.handlers.support.SupportHandler;
 import it.hackhub.application.mappers.SupportoDtoMapper;
 import it.hackhub.application.repositories.core.TeamRepository;
+import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.support.RichiestaSupporto;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Controller Support: Visualizza richieste supporto, Segnala violazioni, Crea richiesta supporto.
@@ -78,5 +82,25 @@ public class SupportController {
 
   public void segnalaViolazione(SegnalazioneViolazioneCreateDTO dto) {
     supportHandler.segnalaViolazione(dto);
+  }
+
+  /**
+   * Visualizza proposte di call di supporto per il team dell'utente. GET /api/support/proposte-call
+   * Solo le richieste con linkCallProposto valorizzato.
+   */
+  public List<RichiestaSupportoResponseDTO> visualizzaProposteCall(Long utenteCorrenteId) {
+    if (utenteCorrenteId == null) {
+      throw new UnauthorizedException("Utente non autenticato");
+    }
+    Optional<Team> teamOpt = teamRepository.findByMembroOrCapoId(utenteCorrenteId);
+    if (teamOpt.isEmpty()) {
+      return Collections.emptyList();
+    }
+    Long teamId = teamOpt.get().getId();
+    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerTeam(teamId);
+    return richieste.stream()
+        .filter(r -> r.getLinkCallProposto() != null && !r.getLinkCallProposto().isBlank())
+        .map(supportoDtoMapper::toResponseDTO)
+        .collect(Collectors.toList());
   }
 }

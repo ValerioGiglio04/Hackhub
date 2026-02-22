@@ -55,6 +55,13 @@ public class SupportHandler {
       .collect(Collectors.toList());
   }
 
+  /**
+   * Ottiene le richieste di supporto per un team (per visualizzare proposte call).
+   */
+  public List<RichiestaSupporto> ottieniRichiestePerTeam(Long teamId) {
+    return richiestaSupportoRepository.findByTeamId(teamId);
+  }
+
   public void segnalaViolazione(SegnalazioneViolazioneCreateDTO dto) {
     SegnalazioneViolazione s = new SegnalazioneViolazione();
     s.setTeamSegnalatoId(dto.getTeamSegnalatoId());
