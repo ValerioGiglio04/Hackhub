@@ -10,36 +10,40 @@ import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.handlers.InvitiHandler;
 import it.hackhub.application.handlers.TeamHandler;
 import it.hackhub.application.repositories.core.TeamRepository;
+import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.associations.InvitoTeam;
 import it.hackhub.core.entities.core.Team;
+import it.hackhub.infrastructure.security.SecurityUtils;
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller per inviti team: invita utente, gestisci invito (accetta/rifiuta).
+ * Controller REST per inviti team (invita, gestisci invito).
  */
+@RestController
+@RequestMapping("/api/inviti")
 public class InvitiController {
 
   private final InvitiHandler invitiHandler;
   private final TeamHandler teamHandler;
   private final TeamRepository teamRepository;
+  private final UtenteRepository utenteRepository;
 
   public InvitiController(
     InvitiHandler invitiHandler,
     TeamHandler teamHandler,
-    TeamRepository teamRepository
+    TeamRepository teamRepository,
+    UtenteRepository utenteRepository
   ) {
     this.invitiHandler = invitiHandler;
     this.teamHandler = teamHandler;
     this.teamRepository = teamRepository;
+    this.utenteRepository = utenteRepository;
   }
 
-  /**
-   * Invita un utente a unirsi al team (solo il capo del team).
-   */
-  public InvitoTeamResponseDTO invitaUtente(InvitoTeamCreateDTO dto, Long utenteCorrenteId) {
-    if (utenteCorrenteId == null) {
-      throw new UnauthorizedException("Utente non autenticato");
-    }
+  @PostMapping("/invita")
+  public InvitoTeamResponseDTO invitaUtente(@RequestBody InvitoTeamCreateDTO dto) {
+    Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
     Team team = teamRepository.findById(dto.getTeamId())
         .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
     if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {
@@ -53,21 +57,19 @@ public class InvitiController {
     return toInvitoTeamResponseDTO(invito);
   }
 
-  /**
-   * Visualizza inviti team ricevuti (PENDING) per l'utente corrente. GET /api/inviti/ricevuti
-   */
-  public List<InvitoTeamResponseDTO> ottieniInvitiRicevuti(Long utenteCorrenteId) {
-    if (utenteCorrenteId == null) {
-      throw new UnauthorizedException("Utente non autenticato");
-    }
+  @GetMapping("/ricevuti")
+  public List<InvitoTeamResponseDTO> ottieniInvitiRicevuti() {
+    Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
     List<InvitoTeam> inviti = invitiHandler.ottieniInvitiRicevutiPending(utenteCorrenteId);
     return inviti.stream().map(InvitiController::toInvitoTeamResponseDTO).collect(java.util.stream.Collectors.toList());
   }
 
-  /**
-   * Gestisce un invito: ACCETTA o RIFIUTA. Ritorna TeamResponseDTO se accetta, InvitoTeamResponseDTO se rifiuta.
-   */
-  public Object gestisciInvito(Long invitoId, GestisciInvitoTeamDTO dto, Long utenteCorrenteId) {
+  @PostMapping("/{invitoId}/gestisci")
+  public Object gestisciInvito(
+    @PathVariable Long invitoId,
+    @RequestBody GestisciInvitoTeamDTO dto
+  ) {
+    Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
     if (dto.getAzione() == null || dto.getAzione().isBlank()) {
       throw new BusinessLogicException("Azione non valida");
     }

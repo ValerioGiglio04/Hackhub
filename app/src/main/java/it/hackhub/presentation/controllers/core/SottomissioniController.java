@@ -2,76 +2,74 @@ package it.hackhub.presentation.controllers.core;
 
 import it.hackhub.application.dto.SottomissioneCreateDTO;
 import it.hackhub.application.dto.SottomissioneUpdateDTO;
-import it.hackhub.application.exceptions.EntityNotFoundException;
-import it.hackhub.application.exceptions.UnauthorizedException;
+import it.hackhub.application.dto.common.StandardResponse;
 import it.hackhub.application.handlers.core.SottomissioneHandler;
+import it.hackhub.application.repositories.core.SottomissioneRepository;
+import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Utente;
-
+import it.hackhub.infrastructure.security.SecurityUtils;
+import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller per la gestione delle operazioni sulle Sottomissioni.
+ * Controller Sottomissioni: Invia/Aggiorna sottomissione, Visualizza per hackathon/team.
  */
+@RestController
+@RequestMapping("/api/sottomissioni")
 public class SottomissioniController {
 
-    private final SottomissioneHandler sottomissioneHandler;
+  private final SottomissioneHandler sottomissioneHandler;
+  private final SottomissioneRepository sottomissioneRepository;
+  private final UtenteRepository utenteRepository;
 
-    public SottomissioniController(SottomissioneHandler sottomissioneHandler) {
-        this.sottomissioneHandler = sottomissioneHandler;
-    }
+  public SottomissioniController(
+    SottomissioneHandler sottomissioneHandler,
+    SottomissioneRepository sottomissioneRepository,
+    UtenteRepository utenteRepository
+  ) {
+    this.sottomissioneHandler = sottomissioneHandler;
+    this.sottomissioneRepository = sottomissioneRepository;
+    this.utenteRepository = utenteRepository;
+  }
 
-    /**
-     * Ottiene le sottomissioni per un hackathon.
-     */
-    public List<Sottomissione> ottieniSottomissioniPerHackathon(Long hackathonId) {
-        try {
-            return sottomissioneHandler.ottieniSottomissioniPerHackathon(hackathonId);
-        } catch (EntityNotFoundException e) {
-            throw new RuntimeException("Hackathon non trovato: " + hackathonId, e);
-        }
-    }
+  @GetMapping
+  public List<Sottomissione> ottieniTutteLeSottomissioni() {
+    SecurityUtils.getCurrentUserId(utenteRepository);
+    return sottomissioneRepository.findAll();
+  }
 
-    /**
-     * Invia una nuova sottomissione.
-     */
-    public Sottomissione inviaSottomissione(SottomissioneCreateDTO dto, Long utenteId) {
-        Utente utente = new Utente();
-        utente.setId(utenteId);
-        
-        try {
-            return sottomissioneHandler.inviaSottomissione(dto, utente);
-        } catch (EntityNotFoundException e) {
-            throw new RuntimeException("Entità non trovata", e);
-        } catch (UnauthorizedException e) {
-            throw new RuntimeException("Utente non autorizzato", e);
-        }
-    }
+  @PostMapping("/invia")
+  public StandardResponse<Sottomissione> inviaSottomissione(@Valid @RequestBody SottomissioneCreateDTO dto) {
+    Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
+    Utente utente = new Utente();
+    utente.setId(utenteId);
+    Sottomissione creata = sottomissioneHandler.inviaSottomissione(dto, utente);
+    return StandardResponse.success(creata);
+  }
 
-    /**
-     * Aggiorna una sottomissione esistente.
-     */
-    public Sottomissione aggiornaSottomissione(Long id, SottomissioneUpdateDTO dto, Long utenteId) {
-        Utente utente = new Utente();
-        utente.setId(utenteId);
-        
-        try {
-            return sottomissioneHandler.aggiornaSottomissione(id, dto, utente);
-        } catch (EntityNotFoundException e) {
-            throw new RuntimeException("Sottomissione non trovata: " + id, e);
-        } catch (UnauthorizedException e) {
-            throw new RuntimeException("Utente non autorizzato", e);
-        }
-    }
+  @PutMapping("/{sottomissioneId}")
+  public StandardResponse<Sottomissione> aggiornaSottomissione(
+    @PathVariable Long sottomissioneId,
+    @Valid @RequestBody SottomissioneUpdateDTO dto
+  ) {
+    Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
+    Utente utente = new Utente();
+    utente.setId(utenteId);
+    Sottomissione aggiornata = sottomissioneHandler.aggiornaSottomissione(sottomissioneId, dto, utente);
+    return StandardResponse.success(aggiornata);
+  }
 
-    /**
-     * Ottiene una sottomissione tramite ID.
-     */
-    public Sottomissione ottieniSottomissione(Long id) {
-        try {
-            return sottomissioneHandler.ottieniSottomissione(id);
-        } catch (EntityNotFoundException e) {
-            throw new RuntimeException("Sottomissione non trovata: " + id, e);
-        }
-    }
+  @GetMapping("/hackathon/{hackathonId}")
+  public List<Sottomissione> ottieniSottomissioniPerHackathon(@PathVariable Long hackathonId) {
+    SecurityUtils.getCurrentUserId(utenteRepository);
+    return sottomissioneHandler.ottieniSottomissioniPerHackathon(hackathonId);
+  }
+
+  @GetMapping("/team/{teamId}")
+  public List<Sottomissione> ottieniSottomissioniPerTeam(@PathVariable Long teamId) {
+    SecurityUtils.getCurrentUserId(utenteRepository);
+    return sottomissioneRepository.findByTeamId(teamId);
+  }
 }

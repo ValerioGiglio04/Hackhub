@@ -1,12 +1,8 @@
 package it.hackhub.application.repositories.support;
 
 import it.hackhub.core.entities.support.SegnalazioneViolazione;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface SegnalazioneViolazioneRepository {
-
-  SegnalazioneViolazione save(SegnalazioneViolazione segnalazione);
-  Optional<SegnalazioneViolazione> findById(Long id);
-  List<SegnalazioneViolazione> findAll();
-}
+@Repository
+public interface SegnalazioneViolazioneRepository extends JpaRepository<SegnalazioneViolazione, Long> {}

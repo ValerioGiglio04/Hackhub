@@ -18,10 +18,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Handler per la gestione delle operazioni business logic sui Team.
  */
+@Service
 public class TeamHandler {
 
     private final TeamRepository teamRepository;
@@ -29,14 +32,7 @@ public class TeamHandler {
     private final HackathonRepository hackathonRepository;
     private final IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository;
 
-    public TeamHandler(TeamRepository teamRepository) {
-        this(teamRepository, null, null, null);
-    }
-
-    public TeamHandler(TeamRepository teamRepository, UtenteRepository utenteRepository) {
-        this(teamRepository, utenteRepository, null, null);
-    }
-
+    @Autowired
     public TeamHandler(
             TeamRepository teamRepository,
             UtenteRepository utenteRepository,
@@ -215,8 +211,8 @@ public class TeamHandler {
         }
 
         IscrizioneTeamHackathon iscrizione = new IscrizioneTeamHackathon();
-        iscrizione.setTeamId(teamId);
-        iscrizione.setHackathonId(hackathonId);
+        iscrizione.setTeam(team);
+        iscrizione.setHackathon(hackathon);
         iscrizione.setDataIscrizione(now);
         iscrizioneTeamHackathonRepository.save(iscrizione);
     }

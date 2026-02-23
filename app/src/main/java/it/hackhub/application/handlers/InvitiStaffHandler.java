@@ -15,10 +15,13 @@ import it.hackhub.core.entities.core.Utente;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Handler per inviti staff hackathon (invita, accetta, rifiuta).
  */
+@Service
 public class InvitiStaffHandler {
 
   private static final int MAX_ORGANIZZATORI = 3;
@@ -31,13 +34,7 @@ public class InvitiStaffHandler {
   private final UtenteRepository utenteRepository;
   private final StaffHackatonRepository staffHackatonRepository;
 
-  public InvitiStaffHandler(
-    InvitoStaffRepository invitoStaffRepository,
-    HackathonHandler hackathonHandler
-  ) {
-    this(invitoStaffRepository, hackathonHandler, null, null, null);
-  }
-
+  @Autowired
   public InvitiStaffHandler(
     InvitoStaffRepository invitoStaffRepository,
     HackathonHandler hackathonHandler,

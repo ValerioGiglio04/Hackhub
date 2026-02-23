@@ -7,9 +7,12 @@ import it.hackhub.application.repositories.core.ValutazioneRepository;
 import it.hackhub.core.entities.core.Valutazione;
 import java.time.LocalDateTime;
 
+import org.springframework.stereotype.Service;
+
 /**
  * Handler per il caso d'uso Valuta sottomissione
  */
+@Service
 public class ValutazioneHandler {
 
   private final ValutazioneRepository valutazioneRepository;

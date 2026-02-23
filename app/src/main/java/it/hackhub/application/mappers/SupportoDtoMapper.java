@@ -5,9 +5,12 @@ import it.hackhub.application.dto.supporto.RichiestaSupportoResponseDTO;
 import it.hackhub.core.entities.support.RichiestaSupporto;
 import java.time.LocalDateTime;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Mapper per RichiestaSupporto / DTO.
  */
+@Component
 public class SupportoDtoMapper {
 
   public RichiestaSupporto toEntity(RichiestaSupportoCreateDTO dto) {

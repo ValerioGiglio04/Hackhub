@@ -1,20 +1,29 @@
 package it.hackhub.core.entities.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.Objects;
 
 /**
  * Entità Utente (capo/membro team, staff hackathon).
  */
+@Entity
+@Table(name = "Utenti")
 public class Utente {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String email;
-  /** Hash della password (non esporre in JSON/serializzazione). */
+  @JsonIgnore
+  @Column(name = "password_hash")
   private String passwordHash;
   private String nome;
   private String cognome;
+  @Column(name = "data_registrazione")
   private LocalDate dataRegistrazione;
+  @Enumerated(EnumType.STRING)
   private RuoloStaff ruolo = RuoloStaff.AUTENTICATO;
 
   public enum RuoloStaff {

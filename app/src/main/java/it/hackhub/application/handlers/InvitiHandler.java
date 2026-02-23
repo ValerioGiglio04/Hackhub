@@ -14,9 +14,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Service;
+
 /**
  * Handler per inviti a unirsi a un team (invita, accetta, rifiuta).
  */
+@Service
 public class InvitiHandler {
 
   private static final int MAX_MEMBRI_TEAM = 5;

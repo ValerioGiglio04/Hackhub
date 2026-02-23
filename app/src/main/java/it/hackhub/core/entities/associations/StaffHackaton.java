@@ -2,15 +2,24 @@ package it.hackhub.core.entities.associations;
 
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Utente;
+import jakarta.persistence.*;
 import java.util.Objects;
 
 /**
- * Associazione utente–hackathon (utente nello staff dell'hackathon). POJO, no JPA.
+ * Associazione utente–hackathon (utente nello staff dell'hackathon).
  */
+@Entity
+@Table(name = "Staff_Hackathon")
 public class StaffHackaton {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @ManyToOne
+  @JoinColumn(name = "id_hackathon", nullable = false)
   private Hackathon hackathon;
+  @ManyToOne
+  @JoinColumn(name = "id_utente", nullable = false)
   private Utente utente;
 
   public StaffHackaton() {}

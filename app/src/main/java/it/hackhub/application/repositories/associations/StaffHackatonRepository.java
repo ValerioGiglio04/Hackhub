@@ -2,12 +2,10 @@ package it.hackhub.application.repositories.associations;
 
 import it.hackhub.core.entities.associations.StaffHackaton;
 import java.util.List;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface StaffHackatonRepository {
-
-  StaffHackaton save(StaffHackaton staffHackaton);
-  Optional<StaffHackaton> findById(Long id);
+@Repository
+public interface StaffHackatonRepository extends JpaRepository<StaffHackaton, Long> {
   List<StaffHackaton> findByHackathonId(Long hackathonId);
-  List<StaffHackaton> findByUtenteId(Long utenteId);
 }

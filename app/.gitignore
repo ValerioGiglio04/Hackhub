@@ -1,4 +1,4 @@
-# Build and IDE
+# Build e IDE
 /build/
 /.gradle/
 /out/
@@ -10,3 +10,17 @@
 ./bin/
 ./target/
 ./dist/
+
+# Db
+./data/
+./data/hackhubdb.mv.db
+./data/hackhubdb.trace.db
+
+# Logs
+./logs/
+
+# Credenziali Google Calendar
+./src/main/resources/google-calendar/*.json
+
+#Credenziali PayPal
+./src/main/resources/application.properties

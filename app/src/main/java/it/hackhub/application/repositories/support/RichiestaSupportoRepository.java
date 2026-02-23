@@ -2,13 +2,11 @@ package it.hackhub.application.repositories.support;
 
 import it.hackhub.core.entities.support.RichiestaSupporto;
 import java.util.List;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface RichiestaSupportoRepository {
-
-  RichiestaSupporto save(RichiestaSupporto richiesta);
-  Optional<RichiestaSupporto> findById(Long id);
-  List<RichiestaSupporto> findAll();
+@Repository
+public interface RichiestaSupportoRepository extends JpaRepository<RichiestaSupporto, Long> {
   List<RichiestaSupporto> findByHackathonId(Long hackathonId);
   List<RichiestaSupporto> findByTeamId(Long teamId);
 }

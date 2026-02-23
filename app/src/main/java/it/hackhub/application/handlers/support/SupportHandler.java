@@ -11,9 +11,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
 /**
  * Handler per use case Support: richieste supporto, segnalazioni violazioni.
  */
+@Service
 public class SupportHandler {
 
   private final RichiestaSupportoRepository richiestaSupportoRepository;

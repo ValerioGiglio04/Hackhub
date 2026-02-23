@@ -7,6 +7,7 @@ import it.hackhub.application.dto.hackathon.HackathonUpdateDTO;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.submission.NotAllSubmissionsEvaluatedException;
+import it.hackhub.application.repositories.associations.IscrizioneTeamHackathonRepository;
 import it.hackhub.application.repositories.associations.StaffHackatonRepository;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.SottomissioneRepository;
@@ -22,10 +23,13 @@ import it.hackhub.core.entities.core.Team;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Handler per i casi d'uso Hackathon
  */
+@Service
 public class HackathonHandler {
 
   private final HackathonRepository hackathonRepository;
@@ -34,35 +38,17 @@ public class HackathonHandler {
   private final ValutazioneRepository valutazioneRepository;
   private final UtenteRepository utenteRepository;
   private final StaffHackatonRepository staffHackatonRepository;
+  private final IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository;
 
-  public HackathonHandler(HackathonRepository hackathonRepository) {
-    this(hackathonRepository, null, null, null, null, null);
-  }
-
-  public HackathonHandler(
-    HackathonRepository hackathonRepository,
-    TeamRepository teamRepository,
-    SottomissioneRepository sottomissioneRepository
-  ) {
-    this(hackathonRepository, teamRepository, sottomissioneRepository, null, null, null);
-  }
-
-  public HackathonHandler(
-    HackathonRepository hackathonRepository,
-    TeamRepository teamRepository,
-    SottomissioneRepository sottomissioneRepository,
-    ValutazioneRepository valutazioneRepository
-  ) {
-    this(hackathonRepository, teamRepository, sottomissioneRepository, valutazioneRepository, null, null);
-  }
-
+  @Autowired
   public HackathonHandler(
     HackathonRepository hackathonRepository,
     TeamRepository teamRepository,
     SottomissioneRepository sottomissioneRepository,
     ValutazioneRepository valutazioneRepository,
     UtenteRepository utenteRepository,
-    StaffHackatonRepository staffHackatonRepository
+    StaffHackatonRepository staffHackatonRepository,
+    IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository
   ) {
     this.hackathonRepository = hackathonRepository;
     this.teamRepository = teamRepository;
@@ -70,6 +56,7 @@ public class HackathonHandler {
     this.valutazioneRepository = valutazioneRepository;
     this.utenteRepository = utenteRepository;
     this.staffHackatonRepository = staffHackatonRepository;
+    this.iscrizioneTeamHackathonRepository = iscrizioneTeamHackathonRepository;
   }
 
   /**
@@ -187,8 +174,8 @@ public class HackathonHandler {
         h.getScadenzaIscrizioni() != null &&
         !now.isBefore(h.getScadenzaIscrizioni())
       ) {
-        int numTeams = teamRepository != null
-          ? teamRepository.countTeamsIscritti(h.getId())
+        int numTeams = iscrizioneTeamHackathonRepository != null
+          ? (int) iscrizioneTeamHackathonRepository.countByHackathon_Id(h.getId())
           : 0;
         h.setStato(
           numTeams >= 1 ? StatoHackathon.IN_CORSO : StatoHackathon.ANNULLATO
@@ -294,8 +281,8 @@ public class HackathonHandler {
       : null;
     if (team == null) throw new EntityNotFoundException("Team", teamId);
     if (
-      teamRepository != null &&
-      !teamRepository.isTeamIscritto(hackathonId, teamId)
+      iscrizioneTeamHackathonRepository != null &&
+      iscrizioneTeamHackathonRepository.findByTeamIdAndHackathonId(teamId, hackathonId).isEmpty()
     ) {
       throw new BusinessLogicException(
         "Il team non è iscritto a questo hackathon"

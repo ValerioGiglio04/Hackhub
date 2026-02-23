@@ -1,11 +1,13 @@
 package it.hackhub.application.scheduler;
 
 import it.hackhub.presentation.controllers.core.HackathonController;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 /**
  * Scheduler per le transizioni di stato degli hackathon (attore Tempo).
- * Esegue avvio/conclusione fase iscrizione e avvio/conclusione fase svolgimento.
  */
+@Component
 public class HackathonScheduler {
 
   private final HackathonController hackathonController;
@@ -14,9 +16,7 @@ public class HackathonScheduler {
     this.hackathonController = hackathonController;
   }
 
-  /**
-   * Verifica e applica le transizioni di stato (da invocare periodicamente, es. ogni minuto).
-   */
+  @Scheduled(fixedDelay = 60000)
   public void updateHackathonStates() {
     hackathonController.avviaFaseIscrizione();
     hackathonController.concludiFaseIscrizione();

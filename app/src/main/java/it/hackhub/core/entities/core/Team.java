@@ -3,7 +3,7 @@ package it.hackhub.core.entities.core;
 import it.hackhub.core.entities.associations.MembroTeam;
 import it.hackhub.core.entities.roles.TeamMember;
 import it.hackhub.core.entities.roles.TeamLeader;
-
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,16 +11,29 @@ import java.util.Objects;
 /**
  * Entità Team (iscrizioni, vincitore).
  */
+@Entity
+@Table(name = "Teams")
 public class Team {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String nome;
+  @Column(name = "email_paypal")
   private String emailPaypal;
+  @ManyToOne
+  @JoinColumn(name = "id_capo")
   private Utente capo;
-  private List<Utente> membri;
+  @ManyToMany
+  @JoinTable(
+    name = "Team_Membri",
+    joinColumns = @JoinColumn(name = "id_team"),
+    inverseJoinColumns = @JoinColumn(name = "id_utente")
+  )
+  private List<Utente> membri = new ArrayList<>();
 
   public Team() {
-    this.membri = new ArrayList<>();
+    if (this.membri == null) this.membri = new ArrayList<>();
   }
 
   public Long getId() {

@@ -1,3 +1,31 @@
 model/visual-paradigm/*.vpp.bak_*
 model/visual-paradigm/*.vpp.lck
 model/visual-paradigm/*.vux
+
+
+# Db
+app/data/
+app/data/hackhubdb.mv.db
+app/data/hackhubdb.trace.db
+
+# Logs
+app/logs/
+
+# Build and IDE
+app/build/
+app/.gradle/
+app/out/
+app/.idea/
+app/*.iml
+app/*.class
+
+# Bin / target
+app/bin/
+app/target/
+app/dist/
+
+# Credenziali Google Calendar
+app/src/main/resources/google-calendar/*.json
+
+#Credenziali applicazione
+app/src/main/resources/application.properties

@@ -1,18 +1,27 @@
 package it.hackhub.core.entities.support;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
  * Entità Segnalazione violazione
  */
+@Entity
+@Table(name = "Segnalazioni_Violazione")
 public class SegnalazioneViolazione {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @Column(name = "id_team_segnalato", nullable = false)
   private Long teamSegnalatoId;
+  @Column(name = "id_mentore_segnalante", nullable = false)
   private Long mentoreSegnalanteId;
+  @Column(name = "id_hackathon", nullable = false)
   private Long hackathonId;
   private String descrizione;
+  @Column(name = "data_segnalazione")
   private LocalDateTime dataSegnalazione;
 
   public Long getId() {

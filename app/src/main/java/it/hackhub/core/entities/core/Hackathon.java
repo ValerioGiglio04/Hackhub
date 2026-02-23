@@ -1,25 +1,39 @@
 package it.hackhub.core.entities.core;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
  * Entità Hackathon
  */
+@Entity
+@Table(name = "Hackathons")
 public class Hackathon {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String nome;
   private String regolamento;
+  @Enumerated(EnumType.STRING)
   private StatoHackathon stato;
+  @Column(name = "inizio_iscrizioni")
   private LocalDateTime inizioIscrizioni;
+  @Column(name = "scadenza_iscrizioni")
   private LocalDateTime scadenzaIscrizioni;
+  @Column(name = "data_inizio")
   private LocalDateTime dataInizio;
+  @Column(name = "data_fine")
   private LocalDateTime dataFine;
+  @Column(name = "scadenza_sottomissioni")
   private LocalDateTime scadenzaSottomissioni;
   private String luogo;
   private Double premio;
+  @Column(name = "max_team_size")
   private Integer maxTeamSize;
+  @OneToOne
+  @JoinColumn(name = "id_team_vincitore")
   private Team teamVincitore;
 
   public Hackathon() {}

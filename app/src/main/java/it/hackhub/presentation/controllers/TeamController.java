@@ -14,14 +14,18 @@ import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
-
+import it.hackhub.infrastructure.security.SecurityUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller per la gestione delle operazioni sui Team.
+ * Controller REST per la gestione dei Team.
  */
+@RestController
+@RequestMapping("/api/team")
 public class TeamController {
 
     private final TeamHandler teamHandler;
@@ -29,14 +33,7 @@ public class TeamController {
     private final UtenteRepository utenteRepository;
     private final InvitiHandler invitiHandler;
 
-    public TeamController(
-        TeamHandler teamHandler,
-        TeamRepository teamRepository,
-        UtenteRepository utenteRepository
-    ) {
-        this(teamHandler, teamRepository, utenteRepository, null);
-    }
-
+    @Autowired
     public TeamController(
         TeamHandler teamHandler,
         TeamRepository teamRepository,
@@ -49,21 +46,16 @@ public class TeamController {
         this.invitiHandler = invitiHandler;
     }
 
-    /**
-     * GET /api/team – Ottiene l'elenco di tutti i team (use case: Visualizza team).
-     */
+    @GetMapping
     public List<TeamResponseDTO> ottieniTuttiITeam() {
         return teamHandler.ottieniTuttiITeam().stream()
                 .map(teamHandler::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Crea un team (use case Crea Team). L'utente corrente diventa il capo.
-     * Non consentito se l'utente è già in un team.
-     * Opzionale: invii agli utenti in utentiDaInvitareIds (solo se capoId = utenteCorrenteId).
-     */
-    public TeamResponseDTO creaTeam(TeamCreateDTO dto, Long utenteCorrenteId) {
+    @PostMapping
+    public TeamResponseDTO creaTeam(@RequestBody TeamCreateDTO dto) {
+        Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         if (teamRepository.findByMembroOrCapoId(utenteCorrenteId).isPresent()) {
             throw new UserAlreadyInTeamException(utenteCorrenteId);
         }
@@ -88,10 +80,9 @@ public class TeamController {
         return teamHandler.toResponseDTO(creato);
     }
 
-    /**
-     * Ottiene la lista dei membri di un team.
-     */
-    public List<UtenteDTO> ottieniMembri(Long teamId, Long utenteId) {
+    @GetMapping("/{teamId}/membri")
+    public List<UtenteDTO> ottieniMembri(@PathVariable Long teamId) {
+        Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Utente utente = new Utente();
         utente.setId(utenteId);
         
@@ -104,10 +95,9 @@ public class TeamController {
         }
     }
 
-    /**
-     * Ottiene le informazioni di un team.
-     */
-    public TeamResponseDTO ottieniTeam(Long teamId, Long utenteId) {
+    @GetMapping("/{teamId}")
+    public TeamResponseDTO ottieniTeam(@PathVariable Long teamId) {
+        Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Utente utente = new Utente();
         utente.setId(utenteId);
         
@@ -120,10 +110,9 @@ public class TeamController {
         }
     }
 
-    /**
-     * Permette a un utente di abbandonare un team.
-     */
-    public void abbandonaTeam(Long teamId, Long utenteId) {
+    @PostMapping("/{teamId}/abbandona")
+    public void abbandonaTeam(@PathVariable Long teamId) {
+        Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Utente utente = new Utente();
         utente.setId(utenteId);
         
@@ -136,13 +125,9 @@ public class TeamController {
         }
     }
 
-    /**
-     * Iscrive il team a un hackathon (Use case: Iscrive team ad Hackathon). Solo membro o capo del team.
-     */
-    public void iscriviAdHackathon(TeamHackathonDTO dto, Long utenteCorrenteId) {
-        if (utenteCorrenteId == null) {
-            throw new UnauthorizedException("Utente non autenticato");
-        }
+    @PostMapping("/iscrivi-hackathon")
+    public void iscriviAdHackathon(@RequestBody TeamHackathonDTO dto) {
+        Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Team team = teamRepository.findByIdWithCapoAndMembri(dto.getTeamId())
                 .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
         boolean isMember = (team.getCapo() != null && team.getCapo().getId().equals(utenteCorrenteId))
@@ -153,13 +138,9 @@ public class TeamController {
         teamHandler.iscriviAdHackathon(dto.getTeamId(), dto.getHackathonId());
     }
 
-    /**
-     * Nomina nuovo capo del team (Use case: Nomina nuovo capo). Solo il capo attuale può farlo.
-     */
-    public TeamResponseDTO nominaNuovoCapo(TeamCaptainDTO dto, Long utenteCorrenteId) {
-        if (utenteCorrenteId == null) {
-            throw new UnauthorizedException("Utente non autenticato");
-        }
+    @PostMapping("/nomina-capo")
+    public TeamResponseDTO nominaNuovoCapo(@RequestBody TeamCaptainDTO dto) {
+        Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Team team = teamRepository.findByIdWithCapoAndMembri(dto.getTeamId())
                 .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
         if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {
@@ -169,13 +150,9 @@ public class TeamController {
         return teamHandler.toResponseDTO(aggiornato);
     }
 
-    /**
-     * Rimuove un membro dal team (Use case: Rimuove membro team). Solo il capo può farlo.
-     */
-    public void rimuoviMembroTeam(Long teamId, Long userId, Long utenteCorrenteId) {
-        if (utenteCorrenteId == null) {
-            throw new UnauthorizedException("Utente non autenticato");
-        }
+    @DeleteMapping("/{teamId}/membri/{userId}")
+    public void rimuoviMembroTeam(@PathVariable Long teamId, @PathVariable Long userId) {
+        Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
         Team team = teamRepository.findByIdWithCapoAndMembri(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
         if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {

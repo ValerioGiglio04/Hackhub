@@ -1,18 +1,28 @@
 package it.hackhub.core.entities.core;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
  * Entità Sottomissione (conclusione fase svolgimento, valutazioni).
  */
+@Entity
+@Table(name = "Sottomissioni")
 public class Sottomissione {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @Column(name = "id_team", nullable = false)
   private Long teamId;
+  @Column(name = "id_hackathon", nullable = false)
   private Long hackathonId;
+  @Column(name = "link_progetto")
   private String linkProgetto;
+  @Column(name = "data_caricamento")
   private LocalDateTime dataCaricamento;
+  @Column(name = "data_ultimo_update")
   private LocalDateTime dataUltimoUpdate;
 
   public Sottomissione() {}

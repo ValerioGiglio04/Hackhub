@@ -2,56 +2,43 @@ package it.hackhub.application.handlers.auth;
 
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.repositories.core.UtenteRepository;
-import it.hackhub.application.security.PasswordEncoder;
-import it.hackhub.application.security.jwt.JwtTokenProvider;
+import it.hackhub.infrastructure.security.jwt.JwtTokenProvider;
 import it.hackhub.core.entities.core.Utente;
 import java.time.LocalDate;
 import java.util.Optional;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
-/**
- * Handler per login e registrazione (senza Spring).
- * Login: verifica credenziali tramite UtenteRepository e PasswordEncoder, genera JWT.
- * Registrazione: verifica email non esistente, codifica password, setDataRegistrazione, save.
- */
+@Service
 public class AuthHandler {
 
   private final UtenteRepository utenteRepository;
   private final PasswordEncoder passwordEncoder;
+  private final AuthenticationManager authenticationManager;
   private final JwtTokenProvider jwtTokenProvider;
 
   public AuthHandler(
     UtenteRepository utenteRepository,
     PasswordEncoder passwordEncoder,
+    AuthenticationManager authenticationManager,
     JwtTokenProvider jwtTokenProvider
   ) {
     this.utenteRepository = utenteRepository;
     this.passwordEncoder = passwordEncoder;
+    this.authenticationManager = authenticationManager;
     this.jwtTokenProvider = jwtTokenProvider;
   }
 
-  /**
-   * Autenticazione: carica utente per email, verifica password, restituisce token JWT.
-   *
-   * @throws it.hackhub.application.exceptions.UnauthorizedException se credenziali non valide
-   */
   public String login(String email, String password) {
-    Optional<Utente> opt = utenteRepository.findByEmail(email);
-    if (opt.isEmpty()) {
-      throw new it.hackhub.application.exceptions.UnauthorizedException("Credenziali non valide");
-    }
-    Utente utente = opt.get();
-    String hash = utente.getPasswordHash();
-    if (hash == null || !passwordEncoder.matches(password, hash)) {
-      throw new it.hackhub.application.exceptions.UnauthorizedException("Credenziali non valide");
-    }
-    return jwtTokenProvider.generateToken(utente);
+    Authentication authentication = authenticationManager.authenticate(
+      new UsernamePasswordAuthenticationToken(email, password)
+    );
+    return jwtTokenProvider.generateToken(authentication);
   }
 
-  /**
-   * Registrazione: verifica email non esistente, codifica password, setDataRegistrazione(now), save.
-   *
-   * @throws BusinessLogicException se email già esistente
-   */
   public Utente registrazione(Utente utente) {
     Optional<Utente> esistente = utenteRepository.findByEmail(utente.getEmail());
     if (esistente.isPresent()) {

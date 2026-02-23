@@ -2,114 +2,76 @@ package it.hackhub.presentation.controllers.auth;
 
 import it.hackhub.application.dto.auth.LoginDTO;
 import it.hackhub.application.dto.auth.RegistrazioneDTO;
+import it.hackhub.application.dto.common.StandardResponse;
 import it.hackhub.application.dto.utente.UtenteResponseDTO;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
-import it.hackhub.application.exceptions.core.ValidationException;
 import it.hackhub.application.handlers.auth.AuthHandler;
 import it.hackhub.application.mappers.UtenteDtoMapper;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Utente;
-import java.util.regex.Pattern;
+import it.hackhub.infrastructure.security.jwt.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import java.util.Map;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Controller per autenticazione: login e registrazione.
- * POST /api/autenticazione/login, POST /api/autenticazione/registrazione.
- * Nessun riferimento a Spring Boot: validazione manuale, eccezioni per 400/401.
- */
+@RestController
+@RequestMapping("/api/autenticazione")
 public class AuthController {
-
-  private static final Pattern EMAIL_PATTERN = Pattern.compile(
-    "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-  );
-  private static final int MIN_PASSWORD_LENGTH = 6;
 
   private final AuthHandler authHandler;
   private final UtenteRepository utenteRepository;
+  private final JwtTokenProvider jwtTokenProvider;
 
-  public AuthController(AuthHandler authHandler) {
-    this(authHandler, null);
-  }
-
-  public AuthController(AuthHandler authHandler, UtenteRepository utenteRepository) {
+  public AuthController(
+    AuthHandler authHandler,
+    UtenteRepository utenteRepository,
+    JwtTokenProvider jwtTokenProvider
+  ) {
     this.authHandler = authHandler;
     this.utenteRepository = utenteRepository;
+    this.jwtTokenProvider = jwtTokenProvider;
   }
 
-  /**
-   * Login: validazione LoginDTO, poi AuthHandler.login.
-   * Success 200 → token JWT; Error 400 → dati non validi; Error 401 → credenziali non valide.
-   */
-  public String login(LoginDTO loginRequest) {
-    validateLogin(loginRequest);
-    return authHandler.login(loginRequest.getEmail(), loginRequest.getPassword());
-  }
-
-  /**
-   * Registrazione: validazione RegistrazioneDTO (campi non vuoti, email valida, password lunghezza minima, nome/cognome validi).
-   * Se validazione fallita → ValidationException (400). Se email già esistente → BusinessLogicException (400).
-   * Success 200 → UtenteResponseDTO.
-   */
-  public UtenteResponseDTO registrazione(RegistrazioneDTO dto) {
-    validateRegistrazione(dto);
+  @PostMapping("/registrazione")
+  public StandardResponse<UtenteResponseDTO> registrazione(
+    @Valid @RequestBody RegistrazioneDTO dto
+  ) {
     Utente utente = UtenteDtoMapper.toEntity(dto);
     Utente creato = authHandler.registrazione(utente);
-    return UtenteDtoMapper.toResponseDTO(creato);
+    UtenteResponseDTO responseDto = UtenteDtoMapper.toResponseDTO(creato);
+    return StandardResponse.success(responseDto);
   }
 
-  /**
-   * GET /api/autenticazione/me – Visualizza informazioni utente (profilo corrente).
-   * L'identità è data dall'email (es. estratta dal JWT dal layer HTTP). 404 se utente non trovato.
-   */
-  public UtenteResponseDTO getCurrentUser(String email) {
-    if (utenteRepository == null) {
-      throw new IllegalStateException("UtenteRepository richiesto per getCurrentUser");
-    }
-    if (email == null || email.isBlank()) {
-      throw new EntityNotFoundException("Utente non autenticato");
-    }
-    Utente utente = utenteRepository.findByEmail(email)
-        .orElseThrow(() -> new EntityNotFoundException("Utente con email " + email + " non trovato"));
+  @PostMapping("/login")
+  public StandardResponse<Map<String, String>> login(
+    @Valid @RequestBody LoginDTO dto
+  ) {
+    String token = authHandler.login(dto.getEmail(), dto.getPassword());
+    return StandardResponse.success(Map.of("token", token));
+  }
+
+  @GetMapping("/me")
+  public UtenteResponseDTO getCurrentUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Utente utente = utenteRepository
+      .findByEmail(email)
+      .orElseThrow(() ->
+        new EntityNotFoundException("Utente con email " + email + " non trovato")
+      );
     return UtenteDtoMapper.toResponseDTO(utente);
   }
 
-  private void validateLogin(LoginDTO dto) {
-    if (dto == null) {
-      throw new ValidationException("Dati di login obbligatori");
+  @PostMapping("/logout")
+  public StandardResponse<Void> logout(HttpServletRequest request) {
+    String bearerToken = request.getHeader("Authorization");
+    if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+      String token = bearerToken.substring(7);
+      jwtTokenProvider.invalidateToken(token);
     }
-    if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-      throw new ValidationException("L'email è obbligatoria");
-    }
-    if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-      throw new ValidationException("La password è obbligatoria");
-    }
-  }
-
-  private void validateRegistrazione(RegistrazioneDTO dto) {
-    if (dto == null) {
-      throw new ValidationException("Dati di registrazione obbligatori");
-    }
-    if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-      throw new ValidationException("L'email è obbligatoria");
-    }
-    if (!EMAIL_PATTERN.matcher(dto.getEmail().trim()).matches()) {
-      throw new ValidationException("L'email non è valida");
-    }
-    if (dto.getPassword() == null || dto.getPassword().length() < MIN_PASSWORD_LENGTH) {
-      throw new ValidationException("La password deve essere di almeno " + MIN_PASSWORD_LENGTH + " caratteri");
-    }
-    if (dto.getNome() == null || dto.getNome().isBlank()) {
-      throw new ValidationException("Il nome è obbligatorio");
-    }
-    if (dto.getCognome() == null || dto.getCognome().isBlank()) {
-      throw new ValidationException("Il cognome è obbligatorio");
-    }
-    if (dto.getRuolo() != null && !dto.getRuolo().isBlank()) {
-      String r = dto.getRuolo().trim().toUpperCase();
-      try {
-        Utente.RuoloStaff.valueOf(r);
-      } catch (IllegalArgumentException e) {
-        throw new ValidationException("Ruolo non valido. Valori ammessi: AUTENTICATO, ORGANIZZATORE, MENTORE, GIUDICE");
-      }
-    }
+    return StandardResponse.success("Logout completato - token invalidato");
   }
 }

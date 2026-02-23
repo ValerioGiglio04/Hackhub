@@ -6,7 +6,7 @@ import it.hackhub.application.exceptions.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.SottomissioneRepository;
-import it.hackhub.application.repositories.TeamRepository;
+import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Team;
@@ -16,9 +16,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Service;
+
 /**
  * Handler per la gestione delle operazioni business logic sulle Sottomissioni.
  */
+@Service
 public class SottomissioneHandler {
 
     private final SottomissioneRepository sottomissioneRepository;

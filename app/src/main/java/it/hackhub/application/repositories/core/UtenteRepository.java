@@ -1,13 +1,11 @@
 package it.hackhub.application.repositories.core;
 
 import it.hackhub.core.entities.core.Utente;
-import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface UtenteRepository {
-
-  Utente save(Utente utente);
-  Optional<Utente> findById(Long id);
-  List<Utente> findAll();
+@Repository
+public interface UtenteRepository extends JpaRepository<Utente, Long> {
   Optional<Utente> findByEmail(String email);
 }

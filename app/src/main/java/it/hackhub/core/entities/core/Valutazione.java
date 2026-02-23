@@ -1,18 +1,26 @@
 package it.hackhub.core.entities.core;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
  * Entità Valutazione
  */
+@Entity
+@Table(name = "Valutazioni")
 public class Valutazione {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @Column(name = "id_sottomissione", nullable = false)
   private Long sottomissioneId;
+  @Column(name = "id_giudice", nullable = false)
   private Long giudiceId;
   private Integer punteggio;
   private String commento;
+  @Column(name = "data_valutazione")
   private LocalDateTime dataValutazione;
 
   public Valutazione() {}

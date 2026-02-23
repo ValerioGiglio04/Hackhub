@@ -3,12 +3,10 @@ package it.hackhub.application.repositories.core;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.StatoHackathon;
 import java.util.List;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface HackathonRepository {
-
-    Hackathon save(Hackathon hackathon);
-    Optional<Hackathon> findById(Long id);
-    List<Hackathon> findAll();
-    List<Hackathon> findByStato(StatoHackathon stato);
+@Repository
+public interface HackathonRepository extends JpaRepository<Hackathon, Long> {
+  List<Hackathon> findByStato(StatoHackathon stato);
 }

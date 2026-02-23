@@ -1,19 +1,28 @@
 package it.hackhub.core.entities.support;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
  * Entità Richiesta di supporto
  */
+@Entity
+@Table(name = "Richieste_Supporto")
 public class RichiestaSupporto {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @Column(name = "id_team", nullable = false)
   private Long teamId;
+  @Column(name = "id_hackathon", nullable = false)
   private Long hackathonId;
   private String descrizione;
+  @Column(name = "data_richiesta")
   private LocalDateTime dataRichiesta;
   private String stato;
+  @Column(name = "link_call_proposto")
   private String linkCallProposto;
 
   public Long getId() {

@@ -3,16 +3,21 @@ package it.hackhub.application.repositories.core;
 import it.hackhub.core.entities.core.Team;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-public interface TeamRepository {
+@Repository
+public interface TeamRepository extends JpaRepository<Team, Long> {
 
-  Team save(Team team);
-  Optional<Team> findById(Long id);
-  List<Team> findAll();
-  Optional<Team> findByIdWithCapoAndMembri(Long id);
-  Optional<Team> findByMembroOrCapoId(Long utenteId);
-  int countTeamsIscritti(Long hackathonId);
-  List<Team> findTeamsIscritti(Long hackathonId);
-  void iscriviTeam(Long hackathonId, Long teamId);
-  boolean isTeamIscritto(Long hackathonId, Long teamId);
+  @EntityGraph(attributePaths = { "capo", "membri" })
+  @Query("SELECT t FROM Team t WHERE t.id = :id")
+  Optional<Team> findByIdWithCapoAndMembri(@Param("id") Long id);
+
+  @Query(
+    "SELECT t FROM Team t WHERE t.capo.id = :utenteId OR :utenteId IN (SELECT m.id FROM t.membri m)"
+  )
+  Optional<Team> findByMembroOrCapoId(@Param("utenteId") Long utenteId);
 }

@@ -2,14 +2,18 @@ package it.hackhub.presentation.controllers.external;
 
 import it.hackhub.application.dto.calendar.CreaAppuntamentoRequest;
 import it.hackhub.application.dto.calendar.CreaAppuntamentoResponse;
+import it.hackhub.application.dto.common.StandardResponse;
 import it.hackhub.application.repositories.support.RichiestaSupportoRepository;
 import it.hackhub.core.entities.support.RichiestaSupporto;
 import java.util.Optional;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller Calendar: Propone call di supporto.
- * Stub: restituisce un link fittizio; opzionalmente aggiorna la richiesta di supporto con il link.
+ * REST Controller Calendar: Propone call di supporto (Mentore).
+ * Crea evento (stub: link fittizio); opzionalmente salva il link sulla richiesta di supporto.
  */
+@RestController
+@RequestMapping("/api/calendar")
 public class CalendarController {
 
   private final RichiestaSupportoRepository richiestaSupportoRepository;
@@ -20,8 +24,9 @@ public class CalendarController {
     this.richiestaSupportoRepository = richiestaSupportoRepository;
   }
 
-  public CreaAppuntamentoResponse creaAppuntamento(
-    CreaAppuntamentoRequest request
+  @PostMapping("/proponi-chiamata")
+  public StandardResponse<CreaAppuntamentoResponse> creaAppuntamento(
+    @RequestBody CreaAppuntamentoRequest request
   ) {
     String link =
       "https://meet.example.com/call-" +
@@ -38,6 +43,6 @@ public class CalendarController {
         richiestaSupportoRepository.save(r);
       }
     }
-    return new CreaAppuntamentoResponse(link);
+    return StandardResponse.success(new CreaAppuntamentoResponse(link));
   }
 }
