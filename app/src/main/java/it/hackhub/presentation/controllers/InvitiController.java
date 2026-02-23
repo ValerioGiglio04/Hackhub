@@ -1,6 +1,5 @@
 package it.hackhub.presentation.controllers;
 
-import it.hackhub.application.dto.TeamResponseDTO;
 import it.hackhub.application.dto.team.GestisciInvitoTeamDTO;
 import it.hackhub.application.dto.team.InvitoTeamCreateDTO;
 import it.hackhub.application.dto.team.InvitoTeamResponseDTO;
@@ -42,17 +41,22 @@ public class InvitiController {
   }
 
   @PostMapping("/invita")
-  public InvitoTeamResponseDTO invitaUtente(@RequestBody InvitoTeamCreateDTO dto) {
+  public InvitoTeamResponseDTO invitaUtente(
+    @RequestBody InvitoTeamCreateDTO dto
+  ) {
     Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
-    Team team = teamRepository.findById(dto.getTeamId())
-        .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
-    if (team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)) {
+    Team team = teamRepository
+      .findById(dto.getTeamId())
+      .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
+    if (
+      team.getCapo() == null || !team.getCapo().getId().equals(utenteCorrenteId)
+    ) {
       throw new UnauthorizedException("Solo il capo del team può invitare");
     }
     InvitoTeam invito = invitiHandler.invitaUtente(
-        dto.getTeamId(),
-        dto.getUtenteInvitatoId(),
-        utenteCorrenteId
+      dto.getTeamId(),
+      dto.getUtenteInvitatoId(),
+      utenteCorrenteId
     );
     return toInvitoTeamResponseDTO(invito);
   }
@@ -60,8 +64,13 @@ public class InvitiController {
   @GetMapping("/ricevuti")
   public List<InvitoTeamResponseDTO> ottieniInvitiRicevuti() {
     Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
-    List<InvitoTeam> inviti = invitiHandler.ottieniInvitiRicevutiPending(utenteCorrenteId);
-    return inviti.stream().map(InvitiController::toInvitoTeamResponseDTO).collect(java.util.stream.Collectors.toList());
+    List<InvitoTeam> inviti = invitiHandler.ottieniInvitiRicevutiPending(
+      utenteCorrenteId
+    );
+    return inviti
+      .stream()
+      .map(InvitiController::toInvitoTeamResponseDTO)
+      .collect(java.util.stream.Collectors.toList());
   }
 
   @PostMapping("/{invitoId}/gestisci")
@@ -79,14 +88,21 @@ public class InvitiController {
         Team team = invitiHandler.accettaInvito(invitoId, utenteCorrenteId);
         return teamHandler.toResponseDTO(team);
       case "RIFIUTA":
-        InvitoTeam invito = invitiHandler.rifiutaInvito(invitoId, utenteCorrenteId);
+        InvitoTeam invito = invitiHandler.rifiutaInvito(
+          invitoId,
+          utenteCorrenteId
+        );
         return toInvitoTeamResponseDTO(invito);
       default:
-        throw new BusinessLogicException("Azione non valida: " + dto.getAzione());
+        throw new BusinessLogicException(
+          "Azione non valida: " + dto.getAzione()
+        );
     }
   }
 
-  private static InvitoTeamResponseDTO toInvitoTeamResponseDTO(InvitoTeam invito) {
+  private static InvitoTeamResponseDTO toInvitoTeamResponseDTO(
+    InvitoTeam invito
+  ) {
     InvitoTeamResponseDTO out = new InvitoTeamResponseDTO();
     out.setId(invito.getId());
     out.setStato(invito.getStato());
@@ -102,7 +118,11 @@ public class InvitiController {
       out.setUtenteInvitatoId(invito.getUtenteInvitato().getId());
       String nome = invito.getUtenteInvitato().getNome();
       String cognome = invito.getUtenteInvitato().getCognome();
-      out.setUtenteInvitatoNome(nome != null && cognome != null ? nome + " " + cognome : (nome != null ? nome : cognome));
+      out.setUtenteInvitatoNome(
+        nome != null && cognome != null
+          ? nome + " " + cognome
+          : (nome != null ? nome : cognome)
+      );
     }
     return out;
   }

@@ -27,12 +27,14 @@ public class GlobalExceptionHandlerController {
     return ApiResponseFactory.error(HttpStatus.NOT_FOUND, e.getMessage());
   }
 
-  @ExceptionHandler({
-    BusinessLogicException.class,
-    ValidationException.class,
-    IllegalArgumentException.class,
-    ValutazioneGiaEsistenteException.class,
-  })
+  @ExceptionHandler(
+    {
+      BusinessLogicException.class,
+      ValidationException.class,
+      IllegalArgumentException.class,
+      ValutazioneGiaEsistenteException.class,
+    }
+  )
   public ResponseEntity<StandardResponse<Void>> handleBadRequest(Exception e) {
     return ApiResponseFactory.error(HttpStatus.BAD_REQUEST, e.getMessage());
   }
@@ -42,11 +44,14 @@ public class GlobalExceptionHandlerController {
     MethodArgumentNotValidException e
   ) {
     Map<String, String> errors = new HashMap<>();
-    e.getBindingResult().getAllErrors().forEach(error -> {
-      String fieldName = ((FieldError) error).getField();
-      String errorMessage = error.getDefaultMessage();
-      errors.put(fieldName, errorMessage);
-    });
+    e
+      .getBindingResult()
+      .getAllErrors()
+      .forEach(error -> {
+        String fieldName = ((FieldError) error).getField();
+        String errorMessage = error.getDefaultMessage();
+        errors.put(fieldName, errorMessage);
+      });
     return ApiResponseFactory.validationError("Errore di validazione", errors);
   }
 
@@ -61,7 +66,10 @@ public class GlobalExceptionHandlerController {
   public ResponseEntity<StandardResponse<Void>> handleBadCredentials(
     BadCredentialsException e
   ) {
-    return ApiResponseFactory.error(HttpStatus.UNAUTHORIZED, "Credenziali non valide");
+    return ApiResponseFactory.error(
+      HttpStatus.UNAUTHORIZED,
+      "Credenziali non valide"
+    );
   }
 
   @ExceptionHandler(Exception.class)

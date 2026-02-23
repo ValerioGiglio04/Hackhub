@@ -175,7 +175,7 @@ public class HackathonHandler {
         !now.isBefore(h.getScadenzaIscrizioni())
       ) {
         int numTeams = iscrizioneTeamHackathonRepository != null
-          ? (int) iscrizioneTeamHackathonRepository.countByHackathon_Id(h.getId())
+          ? (int) iscrizioneTeamHackathonRepository.countByHackathonId(h.getId())
           : 0;
         h.setStato(
           numTeams >= 1 ? StatoHackathon.IN_CORSO : StatoHackathon.ANNULLATO

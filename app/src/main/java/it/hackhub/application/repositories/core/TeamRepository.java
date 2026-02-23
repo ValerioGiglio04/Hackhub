@@ -1,7 +1,6 @@
 package it.hackhub.application.repositories.core;
 
 import it.hackhub.core.entities.core.Team;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

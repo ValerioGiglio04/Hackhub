@@ -16,7 +16,6 @@ import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.application.repositories.associations.IscrizioneTeamHackathonRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Hackathon;
-import it.hackhub.core.entities.core.Team;
 import it.hackhub.infrastructure.security.SecurityUtils;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,20 +50,27 @@ public class HackathonController {
 
   @GetMapping("/pubblico")
   public List<HackathonResponseDTO> ottieniElencoPubblico() {
-    return hackathonHandler.ottieniTuttiGliHackathon().stream()
-        .map(HackathonDtoMapper::toResponseDTO)
-        .collect(Collectors.toList());
+    return hackathonHandler
+      .ottieniTuttiGliHackathon()
+      .stream()
+      .map(HackathonDtoMapper::toResponseDTO)
+      .collect(Collectors.toList());
   }
 
   @GetMapping("/{hackathonId}")
-  public HackathonResponseDTO ottieniHackathonPerId(@PathVariable Long hackathonId) {
-    return hackathonHandler.ottieniHackathonPerId(hackathonId)
-        .map(HackathonDtoMapper::toResponseDTO)
-        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+  public HackathonResponseDTO ottieniHackathonPerId(
+    @PathVariable Long hackathonId
+  ) {
+    return hackathonHandler
+      .ottieniHackathonPerId(hackathonId)
+      .map(HackathonDtoMapper::toResponseDTO)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
   }
 
   @PostMapping
-  public HackathonResponseDTO creaHackathon(@RequestBody HackathonCreateDTO dto) {
+  public HackathonResponseDTO creaHackathon(
+    @RequestBody HackathonCreateDTO dto
+  ) {
     return hackathonHandler.creaHackathon(dto);
   }
 
@@ -107,39 +113,51 @@ public class HackathonController {
   }
 
   @PostMapping("/invita-staff")
-  public InvitoStaffResponseDTO invitaStaff(@RequestBody HackathonStaffAssignmentDTO dto) {
+  public InvitoStaffResponseDTO invitaStaff(
+    @RequestBody HackathonStaffAssignmentDTO dto
+  ) {
     if (invitiStaffHandler == null) {
       throw new IllegalStateException("InvitiStaffHandler non configurato");
     }
     Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
     var invito = invitiStaffHandler.invitaStaff(
-        dto.getHackathonId(),
-        dto.getUtenteId(),
-        utenteCorrenteId
+      dto.getHackathonId(),
+      dto.getUtenteId(),
+      utenteCorrenteId
     );
     return InvitoStaffDtoMapper.toResponseDTO(invito);
   }
 
   /** Restituisce il team vincitore dell'hackathon (se proclamato). */
   @GetMapping("/{hackathonId}/vincitore")
-  public TeamResponseDTO ottieniVincitoreHackathon(@PathVariable Long hackathonId) {
-    Hackathon h = hackathonHandler.ottieniHackathonPerId(hackathonId)
-        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+  public TeamResponseDTO ottieniVincitoreHackathon(
+    @PathVariable Long hackathonId
+  ) {
+    Hackathon h = hackathonHandler
+      .ottieniHackathonPerId(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
     if (h.getTeamVincitore() == null) {
-      throw new EntityNotFoundException("Nessun vincitore assegnato per questo hackathon");
+      throw new EntityNotFoundException(
+        "Nessun vincitore assegnato per questo hackathon"
+      );
     }
     return teamHandler.toResponseDTO(h.getTeamVincitore());
   }
 
   /** Restituisce l'elenco dei team iscritti all'hackathon. */
   @GetMapping("/{hackathonId}/team-iscritti")
-  public List<TeamResponseDTO> ottieniTeamIscrittiHackathon(@PathVariable Long hackathonId) {
-    hackathonHandler.ottieniHackathonPerId(hackathonId)
-        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
-    return iscrizioneTeamHackathonRepository.findByHackathonId(hackathonId).stream()
-        .map(isc -> isc.getTeam())
-        .filter(t -> t != null)
-        .map(teamHandler::toResponseDTO)
-        .collect(Collectors.toList());
+  public List<TeamResponseDTO> ottieniTeamIscrittiHackathon(
+    @PathVariable Long hackathonId
+  ) {
+    hackathonHandler
+      .ottieniHackathonPerId(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    return iscrizioneTeamHackathonRepository
+      .findByHackathonId(hackathonId)
+      .stream()
+      .map(isc -> isc.getTeam())
+      .filter(t -> t != null)
+      .map(teamHandler::toResponseDTO)
+      .collect(Collectors.toList());
   }
 }

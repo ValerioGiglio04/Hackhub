@@ -3,7 +3,6 @@ package it.hackhub.application.mappers;
 import it.hackhub.application.dto.auth.RegistrazioneDTO;
 import it.hackhub.application.dto.utente.UtenteResponseDTO;
 import it.hackhub.core.entities.core.Utente;
-import java.time.LocalDate;
 
 /**
  * Mapper tra Utente, RegistrazioneDTO e UtenteResponseDTO.
@@ -47,7 +46,9 @@ public final class UtenteDtoMapper {
     dto.setEmail(utente.getEmail());
     dto.setDataRegistrazione(utente.getDataRegistrazione());
     dto.setRuolo(
-      utente.getRuolo() != null ? utente.getRuolo() : Utente.RuoloStaff.AUTENTICATO
+      utente.getRuolo() != null
+        ? utente.getRuolo()
+        : Utente.RuoloStaff.AUTENTICATO
     );
     return dto;
   }

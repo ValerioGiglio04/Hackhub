@@ -2,7 +2,6 @@ package it.hackhub.infrastructure.security.userdetails;
 
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Utente;
-import java.util.Optional;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,11 +17,14 @@ public class CustomUserDetailsService implements UserDetailsService {
   }
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(String username)
+    throws UsernameNotFoundException {
     Utente utente = utenteRepository
       .findByEmail(username)
       .orElseThrow(() ->
-        new UsernameNotFoundException("Utente non trovato con email: " + username)
+        new UsernameNotFoundException(
+          "Utente non trovato con email: " + username
+        )
       );
     return new CustomUserDetails(utente);
   }
