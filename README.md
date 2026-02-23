@@ -48,6 +48,14 @@ Pattern e pratiche utilizzate includono:
 - **JWT**: Token per autenticazione stateless; supporto logout con invalidazione token (blacklist in memoria).
 - **StandardResponse**: Risposte API omogenee con successo/errore e messaggio.
 
+## 📐 Diagrammi e modelli (Visual Paradigm)
+
+I diagrammi del progetto (Use Case, Class Diagram, diagrammi di sequenza, ecc.) sono stati realizzati con [Visual Paradigm](https://www.visual-paradigm.com/).
+
+- **Progetto Visual Paradigm**: `model/visual-paradigm/Hackhub.vpp`
+
+Per visualizzare e modificare i diagrammi, aprire il file con [Visual Paradigm](https://www.visual-paradigm.com/download/) (Community Edition o superiore). Il modello è allineato all’architettura e alle entità del codice (ruoli, use case, dominio).
+
 ## 📦 Installazione e Avvio
 
 ### Prerequisiti
