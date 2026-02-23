@@ -1,6 +1,6 @@
-package it.hackhub.infrastructure.external.pagamenti.impl;
+package it.hackhub.application.handlers.external.pagamenti.impl;
 
-import it.hackhub.infrastructure.external.pagamenti.PaymentService;
+import it.hackhub.application.handlers.external.pagamenti.PaymentService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

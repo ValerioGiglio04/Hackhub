@@ -1,4 +1,4 @@
-package it.hackhub.infrastructure.external.calendar.impl;
+package it.hackhub.application.handlers.external.calendar.impl;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonError;
@@ -18,7 +18,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import it.hackhub.application.exceptions.CalendarConflictException;
 import it.hackhub.application.exceptions.PastDateException;
-import it.hackhub.infrastructure.external.calendar.CalendarExternalService;
+import it.hackhub.application.handlers.external.calendar.CalendarExternalService;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;

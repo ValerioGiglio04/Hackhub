@@ -19,7 +19,7 @@ import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
-import it.hackhub.infrastructure.external.calendar.CalendarExternalService;
+import it.hackhub.application.handlers.external.calendar.CalendarExternalService;
 import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import it.hackhub.infrastructure.security.userdetails.CustomUserDetails;
 import java.time.LocalDateTime;

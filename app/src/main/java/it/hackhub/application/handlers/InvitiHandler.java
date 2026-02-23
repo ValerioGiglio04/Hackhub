@@ -60,7 +60,7 @@ public class InvitiHandler {
     Optional<InvitoTeam> esistente = invitoTeamRepository.findByTeamIdAndUtenteInvitatoIdAndStato(
         teamId, utenteInvitatoId, InvitoTeam.StatoInvito.PENDING);
     if (esistente.isPresent()) {
-      throw new BusinessLogicException("Esiste già un invito pendente per questo utente");
+      return esistente.get();
     }
     int membri = team.getMembri() != null ? team.getMembri().size() : 0;
     if (membri >= MAX_MEMBRI_TEAM) {

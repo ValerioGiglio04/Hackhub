@@ -1,4 +1,4 @@
-package it.hackhub.infrastructure.external.calendar;
+package it.hackhub.application.handlers.external.calendar;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

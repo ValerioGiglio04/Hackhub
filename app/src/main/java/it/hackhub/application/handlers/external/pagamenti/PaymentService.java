@@ -1,4 +1,4 @@
-package it.hackhub.infrastructure.external.pagamenti;
+package it.hackhub.application.handlers.external.pagamenti;
 
 public interface PaymentService {
 

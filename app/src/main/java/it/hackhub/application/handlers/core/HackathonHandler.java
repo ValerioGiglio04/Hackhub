@@ -20,7 +20,7 @@ import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
-import it.hackhub.infrastructure.external.pagamenti.PaymentService;
+import it.hackhub.application.handlers.external.pagamenti.PaymentService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
