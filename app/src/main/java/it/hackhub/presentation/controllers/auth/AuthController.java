@@ -3,10 +3,11 @@ package it.hackhub.presentation.controllers.auth;
 import it.hackhub.application.dto.auth.LoginDTO;
 import it.hackhub.application.dto.auth.RegistrazioneDTO;
 import it.hackhub.application.dto.utente.UtenteResponseDTO;
-import it.hackhub.application.exceptions.core.BusinessLogicException;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.core.ValidationException;
 import it.hackhub.application.handlers.auth.AuthHandler;
 import it.hackhub.application.mappers.UtenteDtoMapper;
+import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Utente;
 import java.util.regex.Pattern;
 
@@ -23,9 +24,15 @@ public class AuthController {
   private static final int MIN_PASSWORD_LENGTH = 6;
 
   private final AuthHandler authHandler;
+  private final UtenteRepository utenteRepository;
 
   public AuthController(AuthHandler authHandler) {
+    this(authHandler, null);
+  }
+
+  public AuthController(AuthHandler authHandler, UtenteRepository utenteRepository) {
     this.authHandler = authHandler;
+    this.utenteRepository = utenteRepository;
   }
 
   /**
@@ -47,6 +54,22 @@ public class AuthController {
     Utente utente = UtenteDtoMapper.toEntity(dto);
     Utente creato = authHandler.registrazione(utente);
     return UtenteDtoMapper.toResponseDTO(creato);
+  }
+
+  /**
+   * GET /api/autenticazione/me – Visualizza informazioni utente (profilo corrente).
+   * L'identità è data dall'email (es. estratta dal JWT dal layer HTTP). 404 se utente non trovato.
+   */
+  public UtenteResponseDTO getCurrentUser(String email) {
+    if (utenteRepository == null) {
+      throw new IllegalStateException("UtenteRepository richiesto per getCurrentUser");
+    }
+    if (email == null || email.isBlank()) {
+      throw new EntityNotFoundException("Utente non autenticato");
+    }
+    Utente utente = utenteRepository.findByEmail(email)
+        .orElseThrow(() -> new EntityNotFoundException("Utente con email " + email + " non trovato"));
+    return UtenteDtoMapper.toResponseDTO(utente);
   }
 
   private void validateLogin(LoginDTO dto) {

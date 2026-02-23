@@ -6,10 +6,14 @@ import it.hackhub.application.dto.hackathon.HackathonStaffAssignmentDTO;
 import it.hackhub.application.dto.hackathon.HackathonUpdateDTO;
 import it.hackhub.application.dto.hackathon.HackathonWinnerDTO;
 import it.hackhub.application.dto.hackathon.InvitoStaffResponseDTO;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.handlers.InvitiStaffHandler;
 import it.hackhub.application.handlers.core.HackathonHandler;
+import it.hackhub.application.mappers.HackathonDtoMapper;
 import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.core.entities.core.Hackathon;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller Hackathon
@@ -26,6 +30,24 @@ public class HackathonController {
   public HackathonController(HackathonHandler hackathonHandler, InvitiStaffHandler invitiStaffHandler) {
     this.hackathonHandler = hackathonHandler;
     this.invitiStaffHandler = invitiStaffHandler;
+  }
+
+  /**
+   * GET /api/hackathon/pubblico – Elenco pubblico hackathon (use case: Visualizza informazioni hackathon).
+   */
+  public List<HackathonResponseDTO> ottieniElencoPubblico() {
+    return hackathonHandler.ottieniTuttiGliHackathon().stream()
+        .map(HackathonDtoMapper::toResponseDTO)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * GET /api/hackathon/{hackathonId} – Dettaglio hackathon per id. 404 se non trovato.
+   */
+  public HackathonResponseDTO ottieniHackathonPerId(Long hackathonId) {
+    return hackathonHandler.ottieniHackathonPerId(hackathonId)
+        .map(HackathonDtoMapper::toResponseDTO)
+        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
   }
 
   public HackathonResponseDTO creaHackathon(HackathonCreateDTO dto) {

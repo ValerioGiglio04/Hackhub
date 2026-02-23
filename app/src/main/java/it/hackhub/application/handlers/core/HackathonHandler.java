@@ -21,6 +21,7 @@ import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Handler per i casi d'uso Hackathon
@@ -69,6 +70,21 @@ public class HackathonHandler {
     this.valutazioneRepository = valutazioneRepository;
     this.utenteRepository = utenteRepository;
     this.staffHackatonRepository = staffHackatonRepository;
+  }
+
+  /**
+   * Restituisce tutti gli hackathon (use case: Visualizza informazioni hackathon – elenco pubblico).
+   */
+  public List<Hackathon> ottieniTuttiGliHackathon() {
+    return hackathonRepository.findAll();
+  }
+
+  /**
+   * Restituisce un hackathon per id (use case: Visualizza informazioni hackathon – dettaglio).
+   * Ritorna Optional vuoto se non trovato (il controller gestirà 404).
+   */
+  public Optional<Hackathon> ottieniHackathonPerId(Long hackathonId) {
+    return hackathonRepository.findById(hackathonId);
   }
 
   /**

@@ -7,7 +7,6 @@ import it.hackhub.application.dto.team.TeamCaptainDTO;
 import it.hackhub.application.dto.team.TeamHackathonDTO;
 import it.hackhub.application.exceptions.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
-import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.exceptions.team.UserAlreadyInTeamException;
 import it.hackhub.application.handlers.InvitiHandler;
 import it.hackhub.application.handlers.TeamHandler;
@@ -18,6 +17,7 @@ import it.hackhub.core.entities.core.Utente;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller per la gestione delle operazioni sui Team.
@@ -47,6 +47,15 @@ public class TeamController {
         this.teamRepository = teamRepository;
         this.utenteRepository = utenteRepository;
         this.invitiHandler = invitiHandler;
+    }
+
+    /**
+     * GET /api/team – Ottiene l'elenco di tutti i team (use case: Visualizza team).
+     */
+    public List<TeamResponseDTO> ottieniTuttiITeam() {
+        return teamHandler.ottieniTuttiITeam().stream()
+                .map(teamHandler::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     /**

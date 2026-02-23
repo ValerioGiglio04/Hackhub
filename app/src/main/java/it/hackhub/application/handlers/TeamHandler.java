@@ -49,6 +49,13 @@ public class TeamHandler {
     }
 
     /**
+     * Restituisce tutti i team (use case: Visualizza team – elenco).
+     */
+    public List<Team> ottieniTuttiITeam() {
+        return teamRepository.findAll();
+    }
+
+    /**
      * Crea un team (capo e membri già impostati sull'entità; membri tipicamente vuoti).
      */
     public Team creaTeam(Team team) {
