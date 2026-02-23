@@ -12,7 +12,9 @@ import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.associations.InvitoTeam;
 import it.hackhub.core.entities.core.Team;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +42,8 @@ public class InvitiController {
     this.utenteRepository = utenteRepository;
   }
 
+  /** @requiresRole Richiede che l'utente sia capo del team */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO, requiresTeamLeader = true)
   @PostMapping("/invita")
   public InvitoTeamResponseDTO invitaUtente(
     @RequestBody InvitoTeamCreateDTO dto
@@ -61,6 +65,8 @@ public class InvitiController {
     return toInvitoTeamResponseDTO(invito);
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/ricevuti")
   public List<InvitoTeamResponseDTO> ottieniInvitiRicevuti() {
     Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
@@ -73,6 +79,8 @@ public class InvitiController {
       .collect(java.util.stream.Collectors.toList());
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @PostMapping("/{invitoId}/gestisci")
   public Object gestisciInvito(
     @PathVariable Long invitoId,

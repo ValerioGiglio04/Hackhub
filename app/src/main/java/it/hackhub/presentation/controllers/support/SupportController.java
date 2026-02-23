@@ -10,8 +10,10 @@ import it.hackhub.application.mappers.SupportoDtoMapper;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Team;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.support.RichiestaSupporto;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,7 +45,8 @@ public class SupportController {
     this.utenteRepository = utenteRepository;
   }
 
-  /** Crea una richiesta di supporto. Solo il capo del team può creare richieste per il proprio team. */
+  /** @requiresRole Richiede che l'utente sia capo del team */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO, requiresTeamLeader = true)
   @PostMapping("/crea-richiesta")
   public ResponseEntity<RichiestaSupportoResponseDTO> creaRichiestaSupporto(
     @Valid @RequestBody RichiestaSupportoCreateDTO dto
@@ -64,14 +67,16 @@ public class SupportController {
       .body(supportoDtoMapper.toResponseDTO(saved));
   }
 
-  /** Visualizza tutte le richieste di supporto (organizzatori/mentori; in versione semplificata restituisce tutte). */
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/richieste")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiesteSupporto() {
     SecurityUtils.getCurrentUserId(utenteRepository);
     return supportHandler.ottieniRichiesteSupporto();
   }
 
-  /** Segnala una violazione (ruolo MENTORE). */
+  /** @requiresRole Richiede ruolo MENTORE assegnato all'hackathon specificato */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE, requiresHackathonAssignment = true)
   @PostMapping("/segnala-violazione")
   public ResponseEntity<Void> segnalaViolazione(
     @Valid @RequestBody SegnalazioneViolazioneCreateDTO dto
@@ -82,7 +87,8 @@ public class SupportController {
     return ResponseEntity.ok().build();
   }
 
-  /** Richieste di supporto per hackathon (filtrate lato client se necessario). */
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/richieste/hackathon/{hackathonId}")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerHackathon(
     @PathVariable Long hackathonId
@@ -95,7 +101,8 @@ public class SupportController {
       .collect(Collectors.toList());
   }
 
-  /** Proposte di call per il team dell'utente corrente (richieste con link call valorizzato). */
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/proposte-call")
   public List<RichiestaSupportoResponseDTO> visualizzaProposteCall() {
     Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
@@ -112,8 +119,9 @@ public class SupportController {
       .map(supportoDtoMapper::toResponseDTO)
       .collect(Collectors.toList());
   }
-
-  /** Richieste di supporto per team. */
+  
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/richieste/team/{teamId}")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerTeam(
     @PathVariable Long teamId

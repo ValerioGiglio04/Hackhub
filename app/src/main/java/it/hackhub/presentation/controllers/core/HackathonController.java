@@ -16,7 +16,9 @@ import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.application.repositories.associations.IscrizioneTeamHackathonRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Hackathon;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.*;
@@ -67,6 +69,10 @@ public class HackathonController {
       .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
   }
 
+  /**
+   * @requiresRole Richiede ruolo ORGANIZZATORE
+   */
+  @RequiresRole(role = Utente.RuoloStaff.ORGANIZZATORE)
   @PostMapping
   public HackathonResponseDTO creaHackathon(
     @RequestBody HackathonCreateDTO dto
@@ -74,6 +80,10 @@ public class HackathonController {
     return hackathonHandler.creaHackathon(dto);
   }
 
+  /**
+   * @requiresRole Richiede ruolo ORGANIZZATORE
+   */
+  @RequiresRole(role = Utente.RuoloStaff.ORGANIZZATORE)
   @PutMapping("/{hackathonId}")
   public HackathonResponseDTO aggiornaHackathon(
     @PathVariable Long hackathonId,
@@ -87,6 +97,10 @@ public class HackathonController {
     return res;
   }
 
+  /**
+   * @requiresRole Richiede ruolo ORGANIZZATORE assegnato all'hackathon specificato
+   */
+  @RequiresRole(role = Utente.RuoloStaff.ORGANIZZATORE, requiresHackathonAssignment = true)
   @PostMapping("/vincitore")
   public void impostaVincitore(@RequestBody HackathonWinnerDTO dto) {
     hackathonHandler.impostaVincitore(dto.getHackathonId(), dto.getTeamId());
@@ -112,6 +126,10 @@ public class HackathonController {
     return hackathonHandler.concludiFaseSvolgimento();
   }
 
+  /**
+   * @requiresRole Richiede ruolo ORGANIZZATORE
+   */
+  @RequiresRole(role = Utente.RuoloStaff.ORGANIZZATORE)
   @PostMapping("/invita-staff")
   public InvitoStaffResponseDTO invitaStaff(
     @RequestBody HackathonStaffAssignmentDTO dto
@@ -128,7 +146,10 @@ public class HackathonController {
     return InvitoStaffDtoMapper.toResponseDTO(invito);
   }
 
-  /** Restituisce il team vincitore dell'hackathon (se proclamato). */
+  /**
+   * @requiresRole Richiede autenticazione (qualsiasi ruolo)
+   */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/{hackathonId}/vincitore")
   public TeamResponseDTO ottieniVincitoreHackathon(
     @PathVariable Long hackathonId
@@ -144,7 +165,10 @@ public class HackathonController {
     return teamHandler.toResponseDTO(h.getTeamVincitore());
   }
 
-  /** Restituisce l'elenco dei team iscritti all'hackathon. */
+  /**
+   * @requiresRole Richiede autenticazione (qualsiasi ruolo)
+   */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/{hackathonId}/team-iscritti")
   public List<TeamResponseDTO> ottieniTeamIscrittiHackathon(
     @PathVariable Long hackathonId

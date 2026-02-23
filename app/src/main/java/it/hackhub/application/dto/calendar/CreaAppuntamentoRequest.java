@@ -27,6 +27,11 @@ public class CreaAppuntamentoRequest {
     return idHackaton;
   }
 
+  /** Usato dalla sicurezza (RequiresRoleAspect) per verificare assegnazione mentore all'hackathon. */
+  public Long getHackathonId() {
+    return idHackaton;
+  }
+
   public void setIdHackaton(Long idHackaton) {
     this.idHackaton = idHackaton;
   }

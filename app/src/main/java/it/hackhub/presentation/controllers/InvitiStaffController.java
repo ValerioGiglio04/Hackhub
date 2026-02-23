@@ -7,7 +7,9 @@ import it.hackhub.application.handlers.InvitiStaffHandler;
 import it.hackhub.application.mappers.InvitoStaffDtoMapper;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.associations.InvitoStaff;
+import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,8 @@ public class InvitiStaffController {
     this.utenteRepository = utenteRepository;
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/ricevuti")
   public List<InvitoStaffResponseDTO> ottieniInvitiRicevuti() {
     Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
@@ -40,6 +44,8 @@ public class InvitiStaffController {
       .collect(Collectors.toList());
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @PostMapping("/{invitoId}/gestisci")
   public Object gestisciInvito(
     @PathVariable Long invitoId,

@@ -20,6 +20,7 @@ import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.external.calendar.CalendarExternalService;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import it.hackhub.infrastructure.security.userdetails.CustomUserDetails;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -63,6 +64,8 @@ public class CalendarController {
     this.iscrizioneTeamHackathonRepository = iscrizioneTeamHackathonRepository;
   }
 
+  /** @requiresRole Richiede ruolo MENTORE assegnato all'hackathon specificato */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE, requiresHackathonAssignment = true)
   @PostMapping("/proponi-chiamata")
   public StandardResponse<CreaAppuntamentoResponse> creaAppuntamento(
     @RequestBody CreaAppuntamentoRequest request,

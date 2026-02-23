@@ -9,6 +9,7 @@ import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
@@ -34,12 +35,16 @@ public class SottomissioniController {
     this.utenteRepository = utenteRepository;
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping
   public List<Sottomissione> ottieniTutteLeSottomissioni() {
     SecurityUtils.getCurrentUserId(utenteRepository);
     return sottomissioneRepository.findAll();
   }
 
+  /** @requiresRole Richiede che l'utente sia membro del team che sta inviando la sottomissione */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO, requiresTeamMember = true)
   @PostMapping("/invia")
   public StandardResponse<Sottomissione> inviaSottomissione(@Valid @RequestBody SottomissioneCreateDTO dto) {
     Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
@@ -49,6 +54,8 @@ public class SottomissioniController {
     return StandardResponse.success(creata);
   }
 
+  /** @requiresRole Richiede che l'utente sia membro del team (capo o membro) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO, requiresTeamMember = true)
   @PutMapping("/{sottomissioneId}")
   public StandardResponse<Sottomissione> aggiornaSottomissione(
     @PathVariable Long sottomissioneId,
@@ -61,12 +68,16 @@ public class SottomissioniController {
     return StandardResponse.success(aggiornata);
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/hackathon/{hackathonId}")
   public List<Sottomissione> ottieniSottomissioniPerHackathon(@PathVariable Long hackathonId) {
     SecurityUtils.getCurrentUserId(utenteRepository);
     return sottomissioneHandler.ottieniSottomissioniPerHackathon(hackathonId);
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/team/{teamId}")
   public List<Sottomissione> ottieniSottomissioniPerTeam(@PathVariable Long teamId) {
     SecurityUtils.getCurrentUserId(utenteRepository);

@@ -6,6 +6,7 @@ import it.hackhub.application.mappers.UtenteDtoMapper;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,8 @@ public class UtenteController {
     this.utenteRepository = utenteRepository;
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping
   public List<UtenteResponseDTO> ottieniTuttiGliUtenti() {
     SecurityUtils.getCurrentUserId(utenteRepository);
@@ -31,6 +34,8 @@ public class UtenteController {
       .collect(Collectors.toList());
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/{utenteId}")
   public UtenteResponseDTO ottieniUtentePerId(@PathVariable Long utenteId) {
     SecurityUtils.getCurrentUserId(utenteRepository);

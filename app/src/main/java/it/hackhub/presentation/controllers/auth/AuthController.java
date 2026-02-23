@@ -9,7 +9,9 @@ import it.hackhub.application.handlers.auth.AuthHandler;
 import it.hackhub.application.mappers.UtenteDtoMapper;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Utente;
+import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import it.hackhub.infrastructure.security.jwt.JwtTokenProvider;
+import it.hackhub.core.entities.core.Utente;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -53,6 +55,8 @@ public class AuthController {
     return StandardResponse.success(Map.of("token", token));
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @GetMapping("/me")
   public UtenteResponseDTO getCurrentUser() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -65,6 +69,8 @@ public class AuthController {
     return UtenteDtoMapper.toResponseDTO(utente);
   }
 
+  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
+  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
   @PostMapping("/logout")
   public StandardResponse<Void> logout(HttpServletRequest request) {
     String bearerToken = request.getHeader("Authorization");
