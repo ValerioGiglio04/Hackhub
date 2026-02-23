@@ -8,7 +8,7 @@ HackHub permette di gestire l'intero ciclo di vita di un hackathon, dalla creazi
 
 ## 🚀 Tecnologie Utilizzate
 
-- **Java 21**: Linguaggio di programmazione principale.
+- **Java 17**: Linguaggio di programmazione principale.
 - **Spring Boot 3.2**: Framework per lo sviluppo dell'applicazione backend.
 - **Spring Data JPA**: Per la persistenza dei dati.
 - **Spring Security + JWT**: Autenticazione e autorizzazione basata su token.
