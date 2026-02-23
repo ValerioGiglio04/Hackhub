@@ -14,13 +14,13 @@ import it.hackhub.application.repositories.core.SottomissioneRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.application.repositories.core.ValutazioneRepository;
-import it.hackhub.infrastructure.external.pagamenti.PaymentService;
 import it.hackhub.core.entities.associations.StaffHackaton;
 import it.hackhub.core.entities.core.Hackathon;
-import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.StatoHackathon;
 import it.hackhub.core.entities.core.Team;
+import it.hackhub.core.entities.core.Utente;
+import it.hackhub.infrastructure.external.pagamenti.PaymentService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -89,18 +89,31 @@ public class HackathonHandler {
    */
   public void assegnaStaff(Long hackathonId, Long utenteId) {
     if (utenteRepository == null || staffHackatonRepository == null) {
-      throw new IllegalStateException("UtenteRepository e StaffHackatonRepository richiesti per assegnaStaff");
+      throw new IllegalStateException(
+        "UtenteRepository e StaffHackatonRepository richiesti per assegnaStaff"
+      );
     }
-    Hackathon hackathon = hackathonRepository.findById(hackathonId)
-        .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
-    Utente utente = utenteRepository.findById(utenteId)
-        .orElseThrow(() -> new EntityNotFoundException("Utente", utenteId));
-    boolean alreadyAssigned = staffHackatonRepository.findByHackathonId(hackathonId).stream()
-        .anyMatch(sh -> sh.getUtente() != null && utenteId.equals(sh.getUtente().getId()));
+    Hackathon hackathon = hackathonRepository
+      .findById(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    Utente utente = utenteRepository
+      .findById(utenteId)
+      .orElseThrow(() -> new EntityNotFoundException("Utente", utenteId));
+    boolean alreadyAssigned = staffHackatonRepository
+      .findByHackathonId(hackathonId)
+      .stream()
+      .anyMatch(sh ->
+        sh.getUtente() != null && utenteId.equals(sh.getUtente().getId())
+      );
     if (alreadyAssigned) {
-      throw new BusinessLogicException("L'utente è già assegnato a questo hackathon");
+      throw new BusinessLogicException(
+        "L'utente è già assegnato a questo hackathon"
+      );
     }
-    if (utente.getRuolo() == null || utente.getRuolo() == Utente.RuoloStaff.AUTENTICATO) {
+    if (
+      utente.getRuolo() == null ||
+      utente.getRuolo() == Utente.RuoloStaff.AUTENTICATO
+    ) {
       throw new BusinessLogicException("L'utente non ha un ruolo staff valido");
     }
     StaffHackaton sh = new StaffHackaton(hackathon, utente);
@@ -150,7 +163,11 @@ public class HackathonHandler {
     return response;
   }
 
-  /** Avvio fase iscrizione (Tempo): IN_ATTESA → IN_ISCRIZIONE se now in [inizioIscrizioni, scadenzaIscrizioni). */
+  /**
+   * Avvio fase iscrizione (Tempo)
+   * IN_ATTESA → IN_ISCRIZIONE se now in [inizioIscrizioni, scadenzaIscrizioni);
+   * IN_ATTESA → IN_CORSO se now in [dataInizio, dataFine).
+   */
   public int avviaFaseIscrizione() {
     LocalDateTime now = LocalDateTime.now();
     List<Hackathon> list = hackathonRepository.findByStato(
@@ -167,12 +184,25 @@ public class HackathonHandler {
         h.setStato(StatoHackathon.IN_ISCRIZIONE);
         hackathonRepository.save(h);
         count++;
+      } else if (
+        h.getDataInizio() != null &&
+        h.getDataFine() != null &&
+        !now.isBefore(h.getDataInizio()) &&
+        now.isBefore(h.getDataFine())
+      ) {
+        h.setStato(StatoHackathon.IN_CORSO);
+        hackathonRepository.save(h);
+        count++;
       }
     }
     return count;
   }
 
-  /** Conclusione fase iscrizione (Tempo): IN_ISCRIZIONE → IN_CORSO o ANNULLATO. */
+  /**
+   * Conclusione fase iscrizione (Tempo)
+   * IN_ISCRIZIONE → IN_ATTESA se scadenza passata e evento non ancora iniziato;
+   * IN_ISCRIZIONE → IN_CORSO se now in [dataInizio, dataFine).
+   */
   public int concludiFaseIscrizione() {
     LocalDateTime now = LocalDateTime.now();
     List<Hackathon> list = hackathonRepository.findByStato(
@@ -182,36 +212,20 @@ public class HackathonHandler {
     for (Hackathon h : list) {
       if (
         h.getScadenzaIscrizioni() != null &&
-        !now.isBefore(h.getScadenzaIscrizioni())
+        h.getDataInizio() != null &&
+        now.isAfter(h.getScadenzaIscrizioni()) &&
+        now.isBefore(h.getDataInizio())
       ) {
-        int numTeams = iscrizioneTeamHackathonRepository != null
-          ? (int) iscrizioneTeamHackathonRepository.countByHackathonId(h.getId())
-          : 0;
-        h.setStato(
-          numTeams >= 1 ? StatoHackathon.IN_CORSO : StatoHackathon.ANNULLATO
-        );
+        h.setStato(StatoHackathon.IN_ATTESA);
         hackathonRepository.save(h);
         count++;
-      }
-    }
-    return count;
-  }
-
-  /** Avvio fase svolgimento (Tempo): IN_CORSO → IN_SVOLGIMENTO se now in [dataInizio, dataFine). */
-  public int avviaFaseSvolgimento() {
-    LocalDateTime now = LocalDateTime.now();
-    List<Hackathon> list = hackathonRepository.findByStato(
-      StatoHackathon.IN_CORSO
-    );
-    int count = 0;
-    for (Hackathon h : list) {
-      if (
+      } else if (
         h.getDataInizio() != null &&
         h.getDataFine() != null &&
         !now.isBefore(h.getDataInizio()) &&
         now.isBefore(h.getDataFine())
       ) {
-        h.setStato(StatoHackathon.IN_SVOLGIMENTO);
+        h.setStato(StatoHackathon.IN_CORSO);
         hackathonRepository.save(h);
         count++;
       }
@@ -219,14 +233,31 @@ public class HackathonHandler {
     return count;
   }
 
-  /** Conclusione fase svolgimento (Tempo): IN_SVOLGIMENTO → CONCLUSIONE o ANNULLATO. */
+  public int avviaFaseSvolgimento() {
+    return 0;
+  }
+
+  /**
+   * Conclusione fase svolgimento (Tempo)
+   */
   public int concludiFaseSvolgimento() {
     LocalDateTime now = LocalDateTime.now();
-    List<Hackathon> list = hackathonRepository.findByStato(
+    int count = 0;
+    List<Hackathon> inCorso = hackathonRepository.findByStato(
+      StatoHackathon.IN_CORSO
+    );
+    for (Hackathon h : inCorso) {
+      if (h.getDataFine() != null && now.isAfter(h.getDataFine())) {
+        h.setStato(StatoHackathon.IN_VALUTAZIONE);
+        hackathonRepository.save(h);
+        count++;
+      }
+    }
+    // IN_SVOLGIMENTO → CONCLUSO/ANNULLATO (retrocompatibilità)
+    List<Hackathon> inSvolgimento = hackathonRepository.findByStato(
       StatoHackathon.IN_SVOLGIMENTO
     );
-    int count = 0;
-    for (Hackathon h : list) {
+    for (Hackathon h : inSvolgimento) {
       if (h.getDataFine() != null && !now.isBefore(h.getDataFine())) {
         List<Sottomissione> sottomissioni = sottomissioneRepository != null
           ? sottomissioneRepository.findByHackathonId(h.getId())
@@ -293,7 +324,9 @@ public class HackathonHandler {
     if (team == null) throw new EntityNotFoundException("Team", teamId);
     if (
       iscrizioneTeamHackathonRepository != null &&
-      iscrizioneTeamHackathonRepository.findByTeamIdAndHackathonId(teamId, hackathonId).isEmpty()
+      iscrizioneTeamHackathonRepository
+        .findByTeamIdAndHackathonId(teamId, hackathonId)
+        .isEmpty()
     ) {
       throw new BusinessLogicException(
         "Il team non è iscritto a questo hackathon"
@@ -390,9 +423,7 @@ public class HackathonHandler {
       throw e;
     } catch (Exception e) {
       log.error("Errore durante il pagamento PayPal: {}", e.getMessage(), e);
-      throw new BusinessLogicException(
-        "Pagamento fallito: " + e.getMessage()
-      );
+      throw new BusinessLogicException("Pagamento fallito: " + e.getMessage());
     }
 
     h.setTeamVincitore(team);

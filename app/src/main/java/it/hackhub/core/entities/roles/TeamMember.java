@@ -4,7 +4,7 @@ import it.hackhub.core.entities.associations.MembroTeam;
 
 /**
  * Interfaccia che rappresenta la specializzazione "Membro del Team"
- * di "Membro del Team" secondo il diagramma UML Use Case.
+ * di "Membro del Team".
  *
  * Il Membro del Team può:
  * - Creare Team

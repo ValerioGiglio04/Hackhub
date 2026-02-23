@@ -3,8 +3,8 @@ package it.hackhub.presentation.controllers.support;
 import it.hackhub.application.dto.supporto.RichiestaSupportoCreateDTO;
 import it.hackhub.application.dto.supporto.RichiestaSupportoResponseDTO;
 import it.hackhub.application.dto.supporto.SegnalazioneViolazioneCreateDTO;
-import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.handlers.support.SupportHandler;
 import it.hackhub.application.mappers.SupportoDtoMapper;
 import it.hackhub.application.repositories.core.TeamRepository;
@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller Support: richieste di supporto, segnalazioni violazioni, proposte call.
- * Allineato al diagramma di progetto (Use case: Crea richiesta supporto, Visualizza richieste, Segnala violazioni, Proposte call).
  */
 @RestController
 @RequestMapping("/api/support")
@@ -50,14 +49,19 @@ public class SupportController {
     @Valid @RequestBody RichiestaSupportoCreateDTO dto
   ) {
     Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
-    Team team = teamRepository.findById(dto.getTeamId())
+    Team team = teamRepository
+      .findById(dto.getTeamId())
       .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
     if (team.getCapo() == null || !team.getCapo().getId().equals(utenteId)) {
-      throw new UnauthorizedException("Solo il capo del team può creare richieste di supporto per questo team");
+      throw new UnauthorizedException(
+        "Solo il capo del team può creare richieste di supporto per questo team"
+      );
     }
     RichiestaSupporto richiesta = supportoDtoMapper.toEntity(dto);
     RichiestaSupporto saved = supportHandler.creaRichiesta(richiesta);
-    return ResponseEntity.status(HttpStatus.CREATED).body(supportoDtoMapper.toResponseDTO(saved));
+    return ResponseEntity
+      .status(HttpStatus.CREATED)
+      .body(supportoDtoMapper.toResponseDTO(saved));
   }
 
   /** Visualizza tutte le richieste di supporto (organizzatori/mentori; in versione semplificata restituisce tutte). */
@@ -69,7 +73,9 @@ public class SupportController {
 
   /** Segnala una violazione (ruolo MENTORE). */
   @PostMapping("/segnala-violazione")
-  public ResponseEntity<Void> segnalaViolazione(@Valid @RequestBody SegnalazioneViolazioneCreateDTO dto) {
+  public ResponseEntity<Void> segnalaViolazione(
+    @Valid @RequestBody SegnalazioneViolazioneCreateDTO dto
+  ) {
     Long mentoreId = SecurityUtils.getCurrentUserId(utenteRepository);
     dto.setMentoreSegnalanteUtenteId(mentoreId);
     supportHandler.segnalaViolazione(dto);
@@ -78,9 +84,13 @@ public class SupportController {
 
   /** Richieste di supporto per hackathon (filtrate lato client se necessario). */
   @GetMapping("/richieste/hackathon/{hackathonId}")
-  public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerHackathon(@PathVariable Long hackathonId) {
+  public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerHackathon(
+    @PathVariable Long hackathonId
+  ) {
     SecurityUtils.getCurrentUserId(utenteRepository);
-    return supportHandler.ottieniRichiesteSupporto().stream()
+    return supportHandler
+      .ottieniRichiesteSupporto()
+      .stream()
       .filter(r -> hackathonId.equals(r.getHackathonId()))
       .collect(Collectors.toList());
   }
@@ -91,18 +101,27 @@ public class SupportController {
     Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
     var teamOpt = teamRepository.findByMembroOrCapoId(utenteId);
     if (teamOpt.isEmpty()) return List.of();
-    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerTeam(teamOpt.get().getId());
-    return richieste.stream()
-      .filter(r -> r.getLinkCallProposto() != null && !r.getLinkCallProposto().isBlank())
+    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerTeam(
+      teamOpt.get().getId()
+    );
+    return richieste
+      .stream()
+      .filter(r ->
+        r.getLinkCallProposto() != null && !r.getLinkCallProposto().isBlank()
+      )
       .map(supportoDtoMapper::toResponseDTO)
       .collect(Collectors.toList());
   }
 
   /** Richieste di supporto per team. */
   @GetMapping("/richieste/team/{teamId}")
-  public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerTeam(@PathVariable Long teamId) {
+  public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerTeam(
+    @PathVariable Long teamId
+  ) {
     SecurityUtils.getCurrentUserId(utenteRepository);
-    return supportHandler.ottieniRichiestePerTeam(teamId).stream()
+    return supportHandler
+      .ottieniRichiestePerTeam(teamId)
+      .stream()
       .map(supportoDtoMapper::toResponseDTO)
       .collect(Collectors.toList());
   }

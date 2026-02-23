@@ -16,7 +16,8 @@ public class HackathonScheduler {
     this.hackathonController = hackathonController;
   }
 
-  @Scheduled(fixedDelay = 60000)
+  /** Eseguito ogni minuto (secondo 0) */
+  @Scheduled(cron = "0 * * * * *")
   public void updateHackathonStates() {
     hackathonController.avviaFaseIscrizione();
     hackathonController.concludiFaseIscrizione();
