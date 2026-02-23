@@ -7,12 +7,13 @@ import it.hackhub.application.exceptions.UnauthorizedException;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.handlers.support.SupportHandler;
 import it.hackhub.application.mappers.SupportoDtoMapper;
+import it.hackhub.application.repositories.associations.StaffHackatonRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.support.RichiestaSupporto;
-import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.AuthorizationUtils;
 import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -32,17 +33,20 @@ public class SupportController {
   private final TeamRepository teamRepository;
   private final SupportoDtoMapper supportoDtoMapper;
   private final UtenteRepository utenteRepository;
+  private final StaffHackatonRepository staffHackatonRepository;
 
   public SupportController(
     SupportHandler supportHandler,
     TeamRepository teamRepository,
     SupportoDtoMapper supportoDtoMapper,
-    UtenteRepository utenteRepository
+    UtenteRepository utenteRepository,
+    StaffHackatonRepository staffHackatonRepository
   ) {
     this.supportHandler = supportHandler;
     this.teamRepository = teamRepository;
     this.supportoDtoMapper = supportoDtoMapper;
     this.utenteRepository = utenteRepository;
+    this.staffHackatonRepository = staffHackatonRepository;
   }
 
   /** @requiresRole Richiede che l'utente sia capo del team */
@@ -51,15 +55,13 @@ public class SupportController {
   public ResponseEntity<RichiestaSupportoResponseDTO> creaRichiestaSupporto(
     @Valid @RequestBody RichiestaSupportoCreateDTO dto
   ) {
-    Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
-    Team team = teamRepository
-      .findById(dto.getTeamId())
-      .orElseThrow(() -> new EntityNotFoundException("Team", dto.getTeamId()));
-    if (team.getCapo() == null || !team.getCapo().getId().equals(utenteId)) {
-      throw new UnauthorizedException(
-        "Solo il capo del team può creare richieste di supporto per questo team"
-      );
-    }
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    //E' necessario verificare che l'utente sia capo del team per creare una richiesta di supporto
+    AuthorizationUtils.requireTeamLeader(
+      utente,
+      dto.getTeamId(),
+      teamRepository
+    );
     RichiestaSupporto richiesta = supportoDtoMapper.toEntity(dto);
     RichiestaSupporto saved = supportHandler.creaRichiesta(richiesta);
     return ResponseEntity
@@ -67,68 +69,85 @@ public class SupportController {
       .body(supportoDtoMapper.toResponseDTO(saved));
   }
 
-  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
-  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
+  /** Solo il mentore vede le richieste di supporto (per gli hackathon di cui è mentore). */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE)
   @GetMapping("/richieste")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiesteSupporto() {
-    SecurityUtils.getCurrentUserId(utenteRepository);
-    return supportHandler.ottieniRichiesteSupporto();
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerMentore(
+      utente.getId()
+    );
+    return richieste
+      .stream()
+      .map(supportoDtoMapper::toResponseDTO)
+      .collect(Collectors.toList());
   }
 
-  /** @requiresRole Richiede ruolo MENTORE assegnato all'hackathon specificato */
-  @RequiresRole(role = Utente.RuoloStaff.MENTORE, requiresHackathonAssignment = true)
+  @RequiresRole(
+    role = Utente.RuoloStaff.MENTORE,
+    requiresHackathonAssignment = true
+  )
   @PostMapping("/segnala-violazione")
   public ResponseEntity<Void> segnalaViolazione(
     @Valid @RequestBody SegnalazioneViolazioneCreateDTO dto
   ) {
-    Long mentoreId = SecurityUtils.getCurrentUserId(utenteRepository);
-    dto.setMentoreSegnalanteUtenteId(mentoreId);
+    Utente mentore = AuthorizationUtils.getCurrentUser(utenteRepository);
+    dto.setMentoreSegnalanteUtenteId(mentore.getId());
     supportHandler.segnalaViolazione(dto);
     return ResponseEntity.ok().build();
   }
 
-  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
-  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
+  /** Solo il mentore dell'hackathon vede le richieste di supporto per quell'hackathon. */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE)
   @GetMapping("/richieste/hackathon/{hackathonId}")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerHackathon(
     @PathVariable Long hackathonId
   ) {
-    SecurityUtils.getCurrentUserId(utenteRepository);
-    return supportHandler
-      .ottieniRichiesteSupporto()
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    boolean isMentoreDiQuestoHackathon = staffHackatonRepository
+      .findByUtenteId(utente.getId())
       .stream()
-      .filter(r -> hackathonId.equals(r.getHackathonId()))
-      .collect(Collectors.toList());
-  }
-
-  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
-  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
-  @GetMapping("/proposte-call")
-  public List<RichiestaSupportoResponseDTO> visualizzaProposteCall() {
-    Long utenteId = SecurityUtils.getCurrentUserId(utenteRepository);
-    var teamOpt = teamRepository.findByMembroOrCapoId(utenteId);
-    if (teamOpt.isEmpty()) return List.of();
-    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerTeam(
-      teamOpt.get().getId()
+      .anyMatch(sh -> hackathonId.equals(sh.getHackathon().getId()));
+    if (!isMentoreDiQuestoHackathon) {
+      throw new UnauthorizedException(
+        "Puoi visualizzare solo le richieste di supporto degli hackathon di cui sei mentore."
+      );
+    }
+    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerHackathon(
+      hackathonId
     );
     return richieste
       .stream()
-      .filter(r ->
-        r.getLinkCallProposto() != null && !r.getLinkCallProposto().isBlank()
-      )
       .map(supportoDtoMapper::toResponseDTO)
       .collect(Collectors.toList());
   }
-  
-  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
-  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
+
+  /** Solo il mentore vede le proposte call (per gli hackathon di cui è mentore). */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE)
+  @GetMapping("/proposte-call")
+  public List<RichiestaSupportoResponseDTO> visualizzaProposteCall() {
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    List<RichiestaSupporto> richieste = supportHandler.ottieniProposteCallPerMentore(
+      utente.getId()
+    );
+    return richieste
+      .stream()
+      .map(supportoDtoMapper::toResponseDTO)
+      .collect(Collectors.toList());
+  }
+
+  /** Solo il mentore vede le richieste di un team (solo per gli hackathon di cui è mentore). */
+  @RequiresRole(role = Utente.RuoloStaff.MENTORE)
   @GetMapping("/richieste/team/{teamId}")
   public List<RichiestaSupportoResponseDTO> visualizzaRichiestePerTeam(
     @PathVariable Long teamId
   ) {
-    SecurityUtils.getCurrentUserId(utenteRepository);
-    return supportHandler
-      .ottieniRichiestePerTeam(teamId)
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    List<RichiestaSupporto> richieste = supportHandler.ottieniRichiestePerTeamPerMentore(
+      utente.getId(),
+      teamId
+    );
+    return richieste
       .stream()
       .map(supportoDtoMapper::toResponseDTO)
       .collect(Collectors.toList());

@@ -8,7 +8,10 @@ import java.util.Objects;
  * Entità Sottomissione (conclusione fase svolgimento, valutazioni).
  */
 @Entity
-@Table(name = "Sottomissioni")
+@Table(
+  name = "Sottomissioni",
+  uniqueConstraints = @UniqueConstraint(columnNames = { "id_team", "id_hackathon" })
+)
 public class Sottomissione {
 
   @Id

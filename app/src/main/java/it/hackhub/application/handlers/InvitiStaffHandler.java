@@ -217,4 +217,11 @@ public class InvitiStaffHandler {
       InvitoStaff.StatoInvito.PENDING
     );
   }
+
+  public List<InvitoStaff> ottieniInvitiPendingByHackathon(Long hackathonId) {
+    return invitoStaffRepository.findByHackathonIdAndStato(
+      hackathonId,
+      InvitoStaff.StatoInvito.PENDING
+    );
+  }
 }

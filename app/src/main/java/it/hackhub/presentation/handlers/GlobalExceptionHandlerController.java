@@ -11,6 +11,7 @@ import it.hackhub.application.exceptions.core.ValidationException;
 import it.hackhub.application.exceptions.hackathon.HackathonNotInRegistrationPhaseException;
 import it.hackhub.application.exceptions.hackathon.RegistrationDeadlinePassedException;
 import it.hackhub.application.exceptions.submission.NotAllSubmissionsEvaluatedException;
+import it.hackhub.application.exceptions.submission.SottomissioneGiaPresenteException;
 import it.hackhub.application.exceptions.submission.SubmissionDeadlinePassedException;
 import it.hackhub.application.exceptions.team.TeamFullException;
 import it.hackhub.application.exceptions.team.UserAlreadyInTeamException;
@@ -53,6 +54,13 @@ public class GlobalExceptionHandlerController {
   )
   public ResponseEntity<StandardResponse<Void>> handleBadRequest(Exception e) {
     return ApiResponseFactory.error(HttpStatus.BAD_REQUEST, e.getMessage());
+  }
+
+  @ExceptionHandler(SottomissioneGiaPresenteException.class)
+  public ResponseEntity<StandardResponse<Void>> handleSottomissioneGiaPresente(
+    SottomissioneGiaPresenteException e
+  ) {
+    return ApiResponseFactory.error(HttpStatus.CONFLICT, e.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

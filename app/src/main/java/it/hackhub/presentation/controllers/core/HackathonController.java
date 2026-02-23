@@ -17,7 +17,7 @@ import it.hackhub.application.repositories.associations.IscrizioneTeamHackathonR
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Utente;
-import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.AuthorizationUtils;
 import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -134,14 +134,11 @@ public class HackathonController {
   public InvitoStaffResponseDTO invitaStaff(
     @RequestBody HackathonStaffAssignmentDTO dto
   ) {
-    if (invitiStaffHandler == null) {
-      throw new IllegalStateException("InvitiStaffHandler non configurato");
-    }
-    Long utenteCorrenteId = SecurityUtils.getCurrentUserId(utenteRepository);
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
     var invito = invitiStaffHandler.invitaStaff(
       dto.getHackathonId(),
       dto.getUtenteId(),
-      utenteCorrenteId
+      utente.getId()
     );
     return InvitoStaffDtoMapper.toResponseDTO(invito);
   }

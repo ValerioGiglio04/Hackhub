@@ -6,7 +6,7 @@ import it.hackhub.application.exceptions.valutazione.ValutazioneGiaEsistenteExce
 import it.hackhub.application.repositories.core.ValutazioneRepository;
 import it.hackhub.core.entities.core.Valutazione;
 import java.time.LocalDateTime;
-
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,6 +19,14 @@ public class ValutazioneHandler {
 
   public ValutazioneHandler(ValutazioneRepository valutazioneRepository) {
     this.valutazioneRepository = valutazioneRepository;
+  }
+
+  public List<Valutazione> ottieniTutteLeValutazioni() {
+    return valutazioneRepository.findAll();
+  }
+
+  public List<Valutazione> ottieniValutazioniPerSottomissione(Long sottomissioneId) {
+    return valutazioneRepository.findBySottomissioneId(sottomissioneId);
   }
 
   public ValutazioneResponseDTO creaValutazione(ValutazioneCreateDTO dto) {

@@ -1,11 +1,13 @@
 package it.hackhub.application.mappers;
 
 import it.hackhub.application.dto.TeamCreateDTO;
+import it.hackhub.application.dto.team.InvitoTeamResponseDTO;
 import it.hackhub.application.dto.team.TeamResponseDTO;
 import it.hackhub.application.dto.team.TeamSummaryDTO;
 import it.hackhub.application.dto.utente.UtenteSummaryDTO;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.repositories.core.UtenteRepository;
+import it.hackhub.core.entities.associations.InvitoTeam;
 import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
 import java.util.Collections;
@@ -78,6 +80,30 @@ public class TeamDtoMapper {
     TeamSummaryDTO dto = new TeamSummaryDTO();
     dto.setId(team.getId());
     dto.setNome(team.getNome());
+    return dto;
+  }
+
+  public InvitoTeamResponseDTO toResponseDTO(InvitoTeam invito) {
+    InvitoTeamResponseDTO dto = new InvitoTeamResponseDTO();
+    dto.setId(invito.getId());
+    dto.setStato(invito.getStato());
+    dto.setDataInvito(invito.getDataInvito());
+    if (invito.getTeam() != null) {
+      dto.setTeamId(invito.getTeam().getId());
+      dto.setNomeTeam(invito.getTeam().getNome());
+      if (invito.getTeam().getCapo() != null) {
+        dto.setMittenteCapoId(invito.getTeam().getCapo().getId());
+      }
+    }
+    if (invito.getUtenteInvitato() != null) {
+      Utente u = invito.getUtenteInvitato();
+      dto.setUtenteInvitatoId(u.getId());
+      String nome = u.getNome();
+      String cognome = u.getCognome();
+      dto.setUtenteInvitatoNome(
+        nome != null && cognome != null ? nome + " " + cognome : (nome != null ? nome : cognome != null ? cognome : "")
+      );
+    }
     return dto;
   }
 }

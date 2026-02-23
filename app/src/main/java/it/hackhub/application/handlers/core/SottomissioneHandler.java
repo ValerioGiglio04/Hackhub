@@ -1,141 +1,129 @@
 package it.hackhub.application.handlers.core;
 
-import it.hackhub.application.dto.SottomissioneCreateDTO;
-import it.hackhub.application.dto.SottomissioneUpdateDTO;
-import it.hackhub.application.exceptions.EntityNotFoundException;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
+import it.hackhub.application.exceptions.submission.SottomissioneGiaPresenteException;
+import it.hackhub.application.exceptions.submission.SubmissionDeadlinePassedException;
+import it.hackhub.application.exceptions.validation.InvalidGitHubLinkException;
+import it.hackhub.application.repositories.associations.StaffHackatonRepository;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.SottomissioneRepository;
-import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Sottomissione;
-import it.hackhub.core.entities.core.Team;
 import it.hackhub.core.entities.core.Utente;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-
 import org.springframework.stereotype.Service;
 
 /**
- * Handler per la gestione delle operazioni business logic sulle Sottomissioni.
+ * Handler per la gestione delle sottomissioni.
+ * Logica allineata al progetto di riferimento: scadenza sottomissioni, validazione link GitHub,
+ * ottieni per hackathon/team/giudice.
  */
 @Service
 public class SottomissioneHandler {
 
-    private final SottomissioneRepository sottomissioneRepository;
-    private final HackathonRepository hackathonRepository;
-    private final TeamRepository teamRepository;
+  private final SottomissioneRepository sottomissioneRepository;
+  private final HackathonRepository hackathonRepository;
+  private final StaffHackatonRepository staffHackatonRepository;
 
-    public SottomissioneHandler(SottomissioneRepository sottomissioneRepository,
-                               HackathonRepository hackathonRepository,
-                               TeamRepository teamRepository) {
-        this.sottomissioneRepository = sottomissioneRepository;
-        this.hackathonRepository = hackathonRepository;
-        this.teamRepository = teamRepository;
+  public SottomissioneHandler(
+    SottomissioneRepository sottomissioneRepository,
+    HackathonRepository hackathonRepository,
+    StaffHackatonRepository staffHackatonRepository
+  ) {
+    this.sottomissioneRepository = sottomissioneRepository;
+    this.hackathonRepository = hackathonRepository;
+    this.staffHackatonRepository = staffHackatonRepository;
+  }
+
+  public Sottomissione inviaSottomissione(Sottomissione sottomissione)
+    throws SubmissionDeadlinePassedException, InvalidGitHubLinkException, SottomissioneGiaPresenteException {
+    Hackathon hackathon = hackathonRepository
+      .findById(sottomissione.getHackathonId())
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", sottomissione.getHackathonId()));
+    validaScadenzaSottomissioni(hackathon);
+    validaLinkGitHub(sottomissione.getLinkProgetto());
+    // Una sola sottomissione per team per hackathon
+    if (sottomissioneRepository.findByTeamIdAndHackathonId(sottomissione.getTeamId(), sottomissione.getHackathonId()).isPresent()) {
+      throw new SottomissioneGiaPresenteException(sottomissione.getTeamId(), sottomissione.getHackathonId());
     }
+    sottomissione.setDataCaricamento(LocalDateTime.now());
+    sottomissione.setDataUltimoUpdate(LocalDateTime.now());
+    return sottomissioneRepository.save(sottomissione);
+  }
 
-    /**
-     * Ottiene le sottomissioni per un hackathon.
-     * @param hackathonId l'ID dell'hackathon
-     * @return lista delle sottomissioni
-     * @throws EntityNotFoundException se l'hackathon non esiste
-     */
-    public List<Sottomissione> ottieniSottomissioniPerHackathon(Long hackathonId) {
-        Optional<Hackathon> hackathonOpt = hackathonRepository.findById(hackathonId);
-        if (hackathonOpt.isEmpty()) {
-            throw new EntityNotFoundException("Hackathon non trovato con ID: " + hackathonId);
-        }
+  public Sottomissione aggiornaSottomissione(
+    Long sottomissioneId,
+    Sottomissione sottomissioneAggiornata
+  ) throws EntityNotFoundException, SubmissionDeadlinePassedException, InvalidGitHubLinkException {
+    Sottomissione esistente = sottomissioneRepository
+      .findById(sottomissioneId)
+      .orElseThrow(() -> new EntityNotFoundException("Sottomissione", sottomissioneId));
+    Hackathon hackathon = hackathonRepository
+      .findById(esistente.getHackathonId())
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", esistente.getHackathonId()));
+    validaScadenzaSottomissioni(hackathon);
+    validaLinkGitHub(sottomissioneAggiornata.getLinkProgetto());
+    esistente.setLinkProgetto(sottomissioneAggiornata.getLinkProgetto());
+    esistente.setDataUltimoUpdate(LocalDateTime.now());
+    return sottomissioneRepository.save(esistente);
+  }
 
-        return sottomissioneRepository.findByHackathonId(hackathonId);
+  private void validaScadenzaSottomissioni(Hackathon hackathon) {
+    if (hackathon.getScadenzaSottomissioni() != null
+      && LocalDateTime.now().isAfter(hackathon.getScadenzaSottomissioni())) {
+      throw new SubmissionDeadlinePassedException(hackathon.getScadenzaSottomissioni());
     }
+  }
 
-    /**
-     * Invia una nuova sottomissione.
-     * @param dto i dati della sottomissione
-     * @param utente l'utente che invia la sottomissione
-     * @return la sottomissione creata
-     * @throws EntityNotFoundException se l'hackathon o il team non esistono
-     * @throws UnauthorizedException se l'utente non è membro del team
-     */
-    public Sottomissione inviaSottomissione(SottomissioneCreateDTO dto, Utente utente) {
-        // Verifica esistenza hackathon
-        Optional<Hackathon> hackathonOpt = hackathonRepository.findById(dto.getHackathonId());
-        if (hackathonOpt.isEmpty()) {
-            throw new EntityNotFoundException("Hackathon non trovato con ID: " + dto.getHackathonId());
-        }
-
-        // Verifica esistenza team
-        Optional<Team> teamOpt = teamRepository.findById(dto.getTeamId());
-        if (teamOpt.isEmpty()) {
-            throw new EntityNotFoundException("Team non trovato con ID: " + dto.getTeamId());
-        }
-
-        Team team = teamOpt.get();
-        
-        // Verifica che l'utente sia membro del team
-        if (!team.contieneUtente(utente)) {
-            throw new UnauthorizedException("L'utente non è membro del team");
-        }
-
-        // Crea la sottomissione
-        Sottomissione sottomissione = new Sottomissione();
-        sottomissione.setTeamId(dto.getTeamId());
-        sottomissione.setHackathonId(dto.getHackathonId());
-        sottomissione.setLinkProgetto(dto.getLinkProgetto());
-        sottomissione.setDataCaricamento(LocalDateTime.now());
-        sottomissione.setDataUltimoUpdate(LocalDateTime.now());
-
-        return sottomissioneRepository.save(sottomissione);
+  private void validaLinkGitHub(String linkProgetto) {
+    if (linkProgetto == null || linkProgetto.trim().isEmpty()) {
+      throw new InvalidGitHubLinkException("Il link del progetto GitHub è obbligatorio");
     }
-
-    /**
-     * Aggiorna una sottomissione esistente.
-     * @param id l'ID della sottomissione
-     * @param dto i dati aggiornati
-     * @param utente l'utente che aggiorna la sottomissione
-     * @return la sottomissione aggiornata
-     * @throws EntityNotFoundException se la sottomissione non esiste
-     * @throws UnauthorizedException se l'utente non è autorizzato ad aggiornare
-     */
-    public Sottomissione aggiornaSottomissione(Long id, SottomissioneUpdateDTO dto, Utente utente) {
-        Optional<Sottomissione> sottomissioneOpt = sottomissioneRepository.findById(id);
-        if (sottomissioneOpt.isEmpty()) {
-            throw new EntityNotFoundException("Sottomissione non trovata con ID: " + id);
-        }
-
-        Sottomissione sottomissione = sottomissioneOpt.get();
-
-        // Verifica che l'utente sia membro del team della sottomissione
-        Optional<Team> teamOpt = teamRepository.findById(sottomissione.getTeamId());
-        if (teamOpt.isEmpty()) {
-            throw new EntityNotFoundException("Team non trovato con ID: " + sottomissione.getTeamId());
-        }
-
-        Team team = teamOpt.get();
-        if (!team.contieneUtente(utente)) {
-            throw new UnauthorizedException("L'utente non è autorizzato ad aggiornare questa sottomissione");
-        }
-
-        // Aggiorna i dati
-        sottomissione.setLinkProgetto(dto.getLinkProgetto());
-        sottomissione.setDataUltimoUpdate(LocalDateTime.now());
-
-        return sottomissioneRepository.save(sottomissione);
+    if (!linkProgetto.matches("^https://github\\.com/.+/.+$")) {
+      throw new InvalidGitHubLinkException(
+        "Il link deve essere un URL GitHub valido (es: https://github.com/username/repository)");
     }
+  }
 
-    /**
-     * Ottiene una sottomissione tramite ID.
-     * @param id l'ID della sottomissione
-     * @return la sottomissione trovata
-     * @throws EntityNotFoundException se la sottomissione non esiste
-     */
-    public Sottomissione ottieniSottomissione(Long id) {
-        Optional<Sottomissione> sottomissioneOpt = sottomissioneRepository.findById(id);
-        if (sottomissioneOpt.isEmpty()) {
-            throw new EntityNotFoundException("Sottomissione non trovata con ID: " + id);
-        }
-        return sottomissioneOpt.get();
+  public List<Sottomissione> ottieniTutteLeSottomissioni() {
+    return sottomissioneRepository.findAll();
+  }
+
+  public List<Sottomissione> ottieniSottomissioniPerHackathon(Long hackathonId) {
+    hackathonRepository
+      .findById(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    return sottomissioneRepository.findByHackathonId(hackathonId);
+  }
+
+  public Sottomissione ottieniSottomissionePerId(Long sottomissioneId) {
+    return sottomissioneRepository
+      .findById(sottomissioneId)
+      .orElseThrow(() -> new EntityNotFoundException("Sottomissione", sottomissioneId));
+  }
+
+  public List<Sottomissione> ottieniSottomissioniPerTeam(Long teamId) {
+    return sottomissioneRepository.findByTeamId(teamId);
+  }
+
+  public List<Sottomissione> ottieniSottomissioniPerHackathonEGiudice(
+    Long hackathonId,
+    Long giudiceUtenteId
+  ) throws EntityNotFoundException, UnauthorizedException {
+    hackathonRepository
+      .findById(hackathonId)
+      .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
+    List<it.hackhub.core.entities.associations.StaffHackaton> staff =
+      staffHackatonRepository.findByHackathonId(hackathonId);
+    boolean giudiceAssegnato = staff != null && staff.stream()
+      .anyMatch(sh -> sh.getUtente() != null
+        && sh.getUtente().getId().equals(giudiceUtenteId)
+        && sh.getUtente().getRuolo() == Utente.RuoloStaff.GIUDICE);
+    if (!giudiceAssegnato) {
+      throw new UnauthorizedException("Il giudice non è assegnato a questo hackathon.");
     }
+    return sottomissioneRepository.findByHackathonId(hackathonId);
+  }
 }

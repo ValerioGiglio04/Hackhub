@@ -1,14 +1,14 @@
 package it.hackhub.infrastructure.security;
 
-import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.UnauthorizedException;
-import it.hackhub.core.entities.core.Team;
-import it.hackhub.core.entities.core.Utente;
-import it.hackhub.core.entities.associations.StaffHackaton;
+import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.repositories.associations.StaffHackatonRepository;
 import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
+import it.hackhub.core.entities.associations.StaffHackaton;
+import it.hackhub.core.entities.core.Team;
+import it.hackhub.core.entities.core.Utente;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -60,7 +60,12 @@ public class AuthorizationUtils {
     hackathonRepository
       .findById(hackathonId)
       .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
-    boolean isGiudice = isStaffWithRole(hackathonId, utente.getId(), Utente.RuoloStaff.GIUDICE, staffHackatonRepository);
+    boolean isGiudice = isStaffWithRole(
+      hackathonId,
+      utente.getId(),
+      Utente.RuoloStaff.GIUDICE,
+      staffHackatonRepository
+    );
     if (!isGiudice) {
       throw new UnauthorizedException(
         "Solo i giudici assegnati a questo hackathon possono eseguire questa operazione."
@@ -80,7 +85,12 @@ public class AuthorizationUtils {
     hackathonRepository
       .findById(hackathonId)
       .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
-    boolean isMentore = isStaffWithRole(hackathonId, utente.getId(), Utente.RuoloStaff.MENTORE, staffHackatonRepository);
+    boolean isMentore = isStaffWithRole(
+      hackathonId,
+      utente.getId(),
+      Utente.RuoloStaff.MENTORE,
+      staffHackatonRepository
+    );
     if (!isMentore) {
       throw new UnauthorizedException(
         "Solo i mentori assegnati a questo hackathon possono eseguire questa operazione."
@@ -100,7 +110,12 @@ public class AuthorizationUtils {
     hackathonRepository
       .findById(hackathonId)
       .orElseThrow(() -> new EntityNotFoundException("Hackathon", hackathonId));
-    boolean isOrganizzatore = isStaffWithRole(hackathonId, utente.getId(), Utente.RuoloStaff.ORGANIZZATORE, staffHackatonRepository);
+    boolean isOrganizzatore = isStaffWithRole(
+      hackathonId,
+      utente.getId(),
+      Utente.RuoloStaff.ORGANIZZATORE,
+      staffHackatonRepository
+    );
     if (!isOrganizzatore) {
       throw new UnauthorizedException(
         "Solo gli organizzatori di questo hackathon possono eseguire questa operazione."
@@ -114,11 +129,19 @@ public class AuthorizationUtils {
     Utente.RuoloStaff ruolo,
     StaffHackatonRepository staffHackatonRepository
   ) {
-    List<StaffHackaton> staff = staffHackatonRepository.findByHackathonId(hackathonId);
-    return staff != null && staff.stream()
-      .anyMatch(sh -> sh.getUtente() != null
-        && utenteId.equals(sh.getUtente().getId())
-        && ruolo == sh.getUtente().getRuolo());
+    List<StaffHackaton> staff = staffHackatonRepository.findByHackathonId(
+      hackathonId
+    );
+    return (
+      staff != null &&
+      staff
+        .stream()
+        .anyMatch(sh ->
+          sh.getUtente() != null &&
+          utenteId.equals(sh.getUtente().getId()) &&
+          ruolo == sh.getUtente().getRuolo()
+        )
+    );
   }
 
   /**
@@ -132,7 +155,9 @@ public class AuthorizationUtils {
     Team team = teamRepository
       .findById(teamId)
       .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
-    if (team.getCapo() == null || !team.getCapo().getId().equals(utente.getId())) {
+    if (
+      team.getCapo() == null || !team.getCapo().getId().equals(utente.getId())
+    ) {
       throw new UnauthorizedException(
         "Solo il capo del team può eseguire questa operazione."
       );
@@ -150,13 +175,47 @@ public class AuthorizationUtils {
     Team team = teamRepository
       .findById(teamId)
       .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
-    boolean isCapo = team.getCapo() != null && team.getCapo().getId().equals(utente.getId());
-    boolean isMembro = team.getMembri() != null
-      && team.getMembri().stream().anyMatch(m -> m.getId().equals(utente.getId()));
+    boolean isCapo =
+      team.getCapo() != null && team.getCapo().getId().equals(utente.getId());
+    boolean isMembro =
+      team.getMembri() != null &&
+      team.getMembri().stream().anyMatch(m -> m.getId().equals(utente.getId()));
     if (!isCapo && !isMembro) {
       throw new UnauthorizedException(
         "Solo i membri del team possono eseguire questa operazione."
       );
+    }
+  }
+
+  public static void requireUtenteNonMembroDiUnTeam(
+    Utente utente,
+    TeamRepository teamRepository
+  ) {
+    boolean isMembroOrCapo = teamRepository
+      .findByMembroOrCapoId(utente.getId())
+      .isPresent();
+
+    if (isMembroOrCapo) {
+      throw new UnauthorizedException("L'utente è già membro di un team.");
+    }
+  }
+
+  public static void requireUtenteNonMembroDiUnTeam(
+    Utente utente,
+    TeamRepository teamRepository,
+    Long teamId
+  ) {
+    Team team = teamRepository
+      .findById(teamId)
+      .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
+    boolean isMembro =
+      team.getMembri() != null &&
+      team.getMembri().stream().anyMatch(m -> m.getId().equals(utente.getId()));
+    boolean isCapo =
+      team.getCapo() != null && team.getCapo().getId().equals(utente.getId());
+
+    if (!isMembro && !isCapo) {
+      throw new UnauthorizedException("L'utente non è membro di un team.");
     }
   }
 }

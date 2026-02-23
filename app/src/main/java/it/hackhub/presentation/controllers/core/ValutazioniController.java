@@ -3,54 +3,70 @@ package it.hackhub.presentation.controllers.core;
 import it.hackhub.application.dto.common.StandardResponse;
 import it.hackhub.application.dto.valutazioni.ValutazioneCreateDTO;
 import it.hackhub.application.dto.valutazioni.ValutazioneResponseDTO;
+import it.hackhub.application.handlers.core.SottomissioneHandler;
 import it.hackhub.application.handlers.core.ValutazioneHandler;
+import it.hackhub.application.repositories.associations.StaffHackatonRepository;
+import it.hackhub.application.repositories.core.HackathonRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
-import it.hackhub.application.repositories.core.ValutazioneRepository;
+import it.hackhub.core.entities.core.Sottomissione;
 import it.hackhub.core.entities.core.Utente;
 import it.hackhub.core.entities.core.Valutazione;
-import it.hackhub.infrastructure.security.SecurityUtils;
+import it.hackhub.infrastructure.security.AuthorizationUtils;
 import it.hackhub.infrastructure.security.annotations.RequiresRole;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller Valutazioni: Crea valutazione, Visualizza valutazioni. Ruolo GIUDICE.
+ * Controller Valutazioni: logica e check allineati al riferimento.
+ * Solo GIUDICE assegnato all'hackathon della sottomissione può creare valutazione; solo GIUDICE può vedere elenco.
  */
 @RestController
 @RequestMapping("/api/valutazioni")
 public class ValutazioniController {
 
   private final ValutazioneHandler valutazioneHandler;
-  private final ValutazioneRepository valutazioneRepository;
+  private final SottomissioneHandler sottomissioneHandler;
   private final UtenteRepository utenteRepository;
+  private final HackathonRepository hackathonRepository;
+  private final StaffHackatonRepository staffHackatonRepository;
 
   public ValutazioniController(
     ValutazioneHandler valutazioneHandler,
-    ValutazioneRepository valutazioneRepository,
-    UtenteRepository utenteRepository
+    SottomissioneHandler sottomissioneHandler,
+    UtenteRepository utenteRepository,
+    HackathonRepository hackathonRepository,
+    StaffHackatonRepository staffHackatonRepository
   ) {
     this.valutazioneHandler = valutazioneHandler;
-    this.valutazioneRepository = valutazioneRepository;
+    this.sottomissioneHandler = sottomissioneHandler;
     this.utenteRepository = utenteRepository;
+    this.hackathonRepository = hackathonRepository;
+    this.staffHackatonRepository = staffHackatonRepository;
   }
 
-  /** @requiresRole Richiede autenticazione (qualsiasi ruolo) */
-  @RequiresRole(role = Utente.RuoloStaff.AUTENTICATO)
+  @RequiresRole(role = Utente.RuoloStaff.GIUDICE)
   @GetMapping
   public List<Valutazione> ottieniTutteLeValutazioni() {
-    SecurityUtils.getCurrentUserId(utenteRepository);
-    return valutazioneRepository.findAll();
+    AuthorizationUtils.getCurrentUser(utenteRepository);
+    return valutazioneHandler.ottieniTutteLeValutazioni();
   }
 
-  /** @requiresRole Richiede ruolo GIUDICE assegnato all'hackathon specificato */
-  @RequiresRole(role = Utente.RuoloStaff.GIUDICE, requiresHackathonAssignment = true)
+  @RequiresRole(role = Utente.RuoloStaff.GIUDICE)
   @PostMapping("/crea")
   public StandardResponse<ValutazioneResponseDTO> aggiungiValutazione(
     @Valid @RequestBody ValutazioneCreateDTO dto
   ) {
-    Long giudiceId = SecurityUtils.getCurrentUserId(utenteRepository);
-    dto.setGiudiceId(giudiceId);
+    Utente utente = AuthorizationUtils.getCurrentUser(utenteRepository);
+    Sottomissione sottomissione = sottomissioneHandler.ottieniSottomissionePerId(dto.getSottomissioneId());
+    Long hackathonId = sottomissione.getHackathonId();
+    AuthorizationUtils.requireGiudiceOfHackathon(
+      utente,
+      hackathonId,
+      hackathonRepository,
+      staffHackatonRepository
+    );
+    dto.setGiudiceId(utente.getId());
     ValutazioneResponseDTO created = valutazioneHandler.creaValutazione(dto);
     return StandardResponse.success(created);
   }
