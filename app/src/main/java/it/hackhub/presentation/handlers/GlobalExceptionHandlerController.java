@@ -8,7 +8,14 @@ import it.hackhub.application.exceptions.UnauthorizedException;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
 import it.hackhub.application.exceptions.core.ValidationException;
+import it.hackhub.application.exceptions.hackathon.HackathonNotInRegistrationPhaseException;
+import it.hackhub.application.exceptions.hackathon.RegistrationDeadlinePassedException;
+import it.hackhub.application.exceptions.submission.NotAllSubmissionsEvaluatedException;
+import it.hackhub.application.exceptions.submission.SubmissionDeadlinePassedException;
+import it.hackhub.application.exceptions.team.TeamFullException;
+import it.hackhub.application.exceptions.team.UserAlreadyInTeamException;
 import it.hackhub.application.exceptions.valutazione.ValutazioneGiaEsistenteException;
+import it.hackhub.application.exceptions.validation.InvalidGitHubLinkException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -35,6 +42,13 @@ public class GlobalExceptionHandlerController {
       ValidationException.class,
       IllegalArgumentException.class,
       ValutazioneGiaEsistenteException.class,
+      HackathonNotInRegistrationPhaseException.class,
+      RegistrationDeadlinePassedException.class,
+      SubmissionDeadlinePassedException.class,
+      TeamFullException.class,
+      UserAlreadyInTeamException.class,
+      NotAllSubmissionsEvaluatedException.class,
+      InvalidGitHubLinkException.class,
     }
   )
   public ResponseEntity<StandardResponse<Void>> handleBadRequest(Exception e) {
