@@ -14,6 +14,7 @@ import it.hackhub.application.repositories.core.SottomissioneRepository;
 import it.hackhub.application.repositories.core.TeamRepository;
 import it.hackhub.application.repositories.core.UtenteRepository;
 import it.hackhub.application.repositories.core.ValutazioneRepository;
+import it.hackhub.infrastructure.external.pagamenti.PaymentService;
 import it.hackhub.core.entities.associations.StaffHackaton;
 import it.hackhub.core.entities.core.Hackathon;
 import it.hackhub.core.entities.core.Utente;
@@ -23,6 +24,8 @@ import it.hackhub.core.entities.core.Team;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +35,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class HackathonHandler {
 
+  private static final Logger log = LoggerFactory.getLogger(
+    HackathonHandler.class
+  );
+
   private final HackathonRepository hackathonRepository;
   private final TeamRepository teamRepository;
   private final SottomissioneRepository sottomissioneRepository;
@@ -39,6 +46,7 @@ public class HackathonHandler {
   private final UtenteRepository utenteRepository;
   private final StaffHackatonRepository staffHackatonRepository;
   private final IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository;
+  private final PaymentService paymentService;
 
   @Autowired
   public HackathonHandler(
@@ -48,7 +56,8 @@ public class HackathonHandler {
     ValutazioneRepository valutazioneRepository,
     UtenteRepository utenteRepository,
     StaffHackatonRepository staffHackatonRepository,
-    IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository
+    IscrizioneTeamHackathonRepository iscrizioneTeamHackathonRepository,
+    PaymentService paymentService
   ) {
     this.hackathonRepository = hackathonRepository;
     this.teamRepository = teamRepository;
@@ -57,6 +66,7 @@ public class HackathonHandler {
     this.utenteRepository = utenteRepository;
     this.staffHackatonRepository = staffHackatonRepository;
     this.iscrizioneTeamHackathonRepository = iscrizioneTeamHackathonRepository;
+    this.paymentService = paymentService;
   }
 
   /**
@@ -268,7 +278,8 @@ public class HackathonHandler {
   }
 
   /**
-   * Proclama vincitore.
+   * Proclama vincitore. Se il team ha email PayPal e l'hackathon ha premio > 0,
+   * effettua il payout PayPal prima di impostare il vincitore.
    */
   public void impostaVincitore(Long hackathonId, Long teamId) {
     Hackathon h = hackathonRepository
@@ -304,6 +315,86 @@ public class HackathonHandler {
         throw new NotAllSubmissionsEvaluatedException(hackathonId);
       }
     }
+
+    boolean canPay =
+      team.getEmailPaypal() != null &&
+      !team.getEmailPaypal().isEmpty() &&
+      h.getPremio() != null &&
+      h.getPremio() > 0;
+
+    if (!canPay) {
+      if (team.getEmailPaypal() == null || team.getEmailPaypal().isEmpty()) {
+        log.info(
+          "impostaVincitore: pagamento PayPal non effettuato - team id={} senza email PayPal impostata",
+          teamId
+        );
+      }
+      if (h.getPremio() == null || h.getPremio() <= 0) {
+        log.info(
+          "impostaVincitore: pagamento PayPal non effettuato - hackathon id={} senza premio (premio={})",
+          hackathonId,
+          h.getPremio()
+        );
+      }
+      h.setTeamVincitore(team);
+      h.setStato(StatoHackathon.CONCLUSO);
+      hackathonRepository.save(h);
+      return;
+    }
+
+    if (h.getPremio() > PaymentConstants.MAX_PAYPAL_SANDBOX_AMOUNT) {
+      throw new BusinessLogicException(
+        String.format(
+          "Impossibile processare il pagamento: il premio di %.2f€ supera il limite massimo di %.2f€ consentito da PayPal Sandbox",
+          h.getPremio(),
+          PaymentConstants.MAX_PAYPAL_SANDBOX_AMOUNT
+        )
+      );
+    }
+
+    try {
+      Double amount = h.getPremio();
+      String referenceId = "HACK-" + hackathonId + "-TEAM-" + teamId;
+      log.info(
+        "impostaVincitore: chiamata API PayPal per payout - hackathonId={}, teamId={}, email={}, amount={} EUR",
+        hackathonId,
+        teamId,
+        team.getEmailPaypal(),
+        amount
+      );
+
+      PaymentService.PaymentResponse response = paymentService.processPayment(
+        team.getEmailPaypal(),
+        amount,
+        "EUR",
+        referenceId
+      );
+
+      if (!response.success()) {
+        log.error("PayPal payout fallito: {}", response.errorMessage());
+        throw new BusinessLogicException(
+          "Pagamento fallito: " + response.errorMessage()
+        );
+      }
+      log.info(
+        "PayPal payout completato: payoutBatchId={}, batchStatus={}, senderBatchId={}, detailsUrl={}, referenceId={}, teamId={}, hackathonId={}",
+        response.transactionId(),
+        response.batchStatus(),
+        response.senderBatchId(),
+        response.payoutDetailsUrl(),
+        referenceId,
+        teamId,
+        hackathonId
+      );
+    } catch (BusinessLogicException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Errore durante il pagamento PayPal: {}", e.getMessage(), e);
+      throw new BusinessLogicException(
+        "Pagamento fallito: " + e.getMessage()
+      );
+    }
+
     h.setTeamVincitore(team);
     h.setStato(StatoHackathon.CONCLUSO);
     hackathonRepository.save(h);

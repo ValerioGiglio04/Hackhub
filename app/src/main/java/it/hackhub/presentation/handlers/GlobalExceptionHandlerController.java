@@ -2,6 +2,8 @@ package it.hackhub.presentation.handlers;
 
 import it.hackhub.application.dto.common.ApiResponseFactory;
 import it.hackhub.application.dto.common.StandardResponse;
+import it.hackhub.application.exceptions.CalendarConflictException;
+import it.hackhub.application.exceptions.PastDateException;
 import it.hackhub.application.exceptions.UnauthorizedException;
 import it.hackhub.application.exceptions.core.BusinessLogicException;
 import it.hackhub.application.exceptions.core.EntityNotFoundException;
@@ -70,6 +72,20 @@ public class GlobalExceptionHandlerController {
       HttpStatus.UNAUTHORIZED,
       "Credenziali non valide"
     );
+  }
+
+  @ExceptionHandler(CalendarConflictException.class)
+  public ResponseEntity<StandardResponse<Void>> handleCalendarConflict(
+    CalendarConflictException e
+  ) {
+    return ApiResponseFactory.error(HttpStatus.CONFLICT, e.getMessage());
+  }
+
+  @ExceptionHandler(PastDateException.class)
+  public ResponseEntity<StandardResponse<Void>> handlePastDate(
+    PastDateException e
+  ) {
+    return ApiResponseFactory.error(HttpStatus.BAD_REQUEST, e.getMessage());
   }
 
   @ExceptionHandler(Exception.class)
